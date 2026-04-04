@@ -145,21 +145,36 @@ export default function Sidebar({ onNavigateHome }: SidebarProps) {
           </svg>
         </button>
         {/* Tipalti logo */}
-        <div className="flex items-center gap-2">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            {/* Orange diamond logo mark */}
-            <path d="M12 2L4 7v10l8 5 8-5V7l-8-5z" fill="url(#tipaltiGrad)" />
-            <path d="M12 7l-4 2.5v5L12 17l4-2.5v-5L12 7z" fill="white" fillOpacity="0.3" />
+        <div className="flex items-center">
+          <svg width="100" height="32" viewBox="0 0 100 32" fill="none">
+            {/* Orange swoosh arc */}
+            <path
+              d="M8 10C14 4, 28 2, 42 8"
+              stroke="url(#swooshGrad)"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+              fill="none"
+            />
+            {/* tipalti text */}
+            <text
+              x="4"
+              y="26"
+              fontFamily="'Inter', system-ui, sans-serif"
+              fontWeight="800"
+              fontSize="20"
+              fontStyle="italic"
+              fill="white"
+              letterSpacing="-0.5"
+            >
+              tipalti
+            </text>
             <defs>
-              <linearGradient id="tipaltiGrad" x1="4" y1="2" x2="20" y2="22" gradientUnits="userSpaceOnUse">
+              <linearGradient id="swooshGrad" x1="8" y1="8" x2="42" y2="8" gradientUnits="userSpaceOnUse">
                 <stop stopColor="#F5A623" />
-                <stop offset="1" stopColor="#F57C23" />
+                <stop offset="1" stopColor="#E8951A" />
               </linearGradient>
             </defs>
           </svg>
-          <span className="text-white font-bold text-lg tracking-tight" style={{ fontFamily: "'Inter', sans-serif" }}>
-            tipalti
-          </span>
         </div>
       </div>
 
