@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useRef, useEffect } from "react";
 import { Task } from "@/data/mockData";
 import { StatusBadge } from "./StatusBadge";
 
@@ -77,7 +78,278 @@ function ActionButton({
   );
 }
 
+// ─── Chat Panel ──────────────────────────────────────────────────────────────
+
+interface ChatMessage {
+  id: string;
+  role: "user" | "teammate";
+  text: string;
+  timestamp: Date;
+}
+
+function generateTeammateReply(task: Task, userMessage: string): string {
+  const lower = userMessage.toLowerCase();
+
+  if (lower.includes("why") || lower.includes("explain") || lower.includes("reason")) {
+    return task.reasoning ??
+      `I processed this based on the available data and your configured policies. The decision was made with ${task.confidence ?? "high"}% confidence.`;
+  }
+  if (lower.includes("context") || lower.includes("data") || lower.includes("what did you use")) {
+    if (task.contextUsed && task.contextUsed.length > 0) {
+      return `Here's the context I used for this decision:\n\n${task.contextUsed.map((c) => `• ${c}`).join("\n")}`;
+    }
+    return "I used the available vendor history, your configured policies, and the invoice data to make this decision.";
+  }
+  if (lower.includes("policy") || lower.includes("rule")) {
+    return task.policyTriggered
+      ? `The policy that triggered here was: "${task.policyTriggered}". Would you like to modify this policy or create an exception?`
+      : "No specific policy was triggered for this task. It was processed using standard validation rules.";
+  }
+  if (lower.includes("approve") || lower.includes("go ahead") || lower.includes("proceed")) {
+    return `Got it — I'll proceed with processing this ${task.vendor} item. It will be moved to the completed queue once done.`;
+  }
+  if (lower.includes("change") || lower.includes("update") || lower.includes("modify")) {
+    return "I can update how I handle similar items going forward. Could you describe the specific change you'd like? For example: a different coding rule, routing logic, or approval threshold.";
+  }
+  if (lower.includes("similar") || lower.includes("like this") || lower.includes("history")) {
+    return `Looking at recent history, I've processed 4 similar items from ${task.vendor} in the past 30 days. 3 were auto-approved and 1 was flagged for the same type of issue. Would you like me to pull up the details?`;
+  }
+
+  return `I'm reviewing ${task.submittedBy ?? task.vendor} — ${task.invoiceNumber}. ${task.summary}. What would you like to know or do?`;
+}
+
+function ChatPanel({ task, onClose }: { task: Task; onClose: () => void }) {
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      id: "welcome",
+      role: "teammate",
+      text: `You're chatting about: **${task.submittedBy ?? task.vendor}** (${task.invoiceNumber}).\n\n${task.summary}\n\nHow can I help? You can ask me about my reasoning, the context I used, related policies, or tell me how to handle this differently.`,
+      timestamp: new Date(),
+    },
+  ]);
+  const [input, setInput] = useState("");
+  const [isTyping, setIsTyping] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  const sendMessage = () => {
+    const text = input.trim();
+    if (!text) return;
+
+    const userMsg: ChatMessage = {
+      id: `user-${Date.now()}`,
+      role: "user",
+      text,
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, userMsg]);
+    setInput("");
+    setIsTyping(true);
+
+    // Simulate teammate thinking
+    setTimeout(() => {
+      const reply: ChatMessage = {
+        id: `teammate-${Date.now()}`,
+        role: "teammate",
+        text: generateTeammateReply(task, text),
+        timestamp: new Date(),
+      };
+      setMessages((prev) => [...prev, reply]);
+      setIsTyping(false);
+    }, 800 + Math.random() * 800);
+  };
+
+  const quickActions = [
+    "Why was this flagged?",
+    "What context did you use?",
+    "Show me similar items",
+  ];
+
+  return (
+    <div className="fixed top-0 right-[520px] h-full w-[380px] bg-white z-50 shadow-side-panel flex flex-col border-r border-tipalti-border">
+      {/* Chat header */}
+      <div className="px-5 py-4 border-b border-tipalti-border flex items-center justify-between bg-tipalti-bg-light/50">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-tipalti-blue flex items-center justify-center flex-shrink-0">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M1 3.5a1.5 1.5 0 011.5-1.5h9A1.5 1.5 0 0113 3.5v5a1.5 1.5 0 01-1.5 1.5H5L2 13V3.5z" stroke="white" strokeWidth="1.3" strokeLinejoin="round" />
+              <circle cx="5" cy="6" r="0.75" fill="white" />
+              <circle cx="7" cy="6" r="0.75" fill="white" />
+              <circle cx="9" cy="6" r="0.75" fill="white" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-tipalti-text-primary">Ask AP Specialist</p>
+            <p className="text-[10px] text-tipalti-text-muted">Context: {task.invoiceNumber}</p>
+          </div>
+        </div>
+        <button
+          onClick={onClose}
+          className="p-1.5 rounded-md hover:bg-tipalti-border text-tipalti-text-muted transition-colors"
+        >
+          <CloseIcon />
+        </button>
+      </div>
+
+      {/* Context chip */}
+      <div className="px-4 py-2.5 border-b border-tipalti-border bg-tipalti-info-bg/40">
+        <div className="flex items-center gap-2">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <path d="M6 1L1 3.5v3C1 9 3.2 11.2 6 12c2.8-.8 5-3 5-5.5v-3L6 1z" stroke="#0052CC" strokeWidth="1.2" />
+          </svg>
+          <span className="text-[11px] text-tipalti-blue font-medium">
+            Scoped to: {task.submittedBy ?? task.vendor} — {task.invoiceNumber}
+          </span>
+        </div>
+      </div>
+
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+        {messages.map((msg) => (
+          <div
+            key={msg.id}
+            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+          >
+            <div className={`max-w-[85%] ${msg.role === "user" ? "order-2" : ""}`}>
+              {msg.role === "teammate" && (
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <div className="w-5 h-5 rounded-md bg-tipalti-blue flex items-center justify-center">
+                    <span className="text-white text-[8px] font-bold">AP</span>
+                  </div>
+                  <span className="text-[10px] text-tipalti-text-muted font-medium">AP Specialist</span>
+                </div>
+              )}
+              <div
+                className={`text-sm leading-relaxed rounded-xl px-4 py-3 ${
+                  msg.role === "user"
+                    ? "bg-tipalti-blue text-white rounded-br-sm"
+                    : "bg-tipalti-bg-light text-tipalti-text-primary rounded-bl-sm"
+                }`}
+              >
+                {msg.text.split("\n").map((line, i) => (
+                  <span key={i}>
+                    {line.replace(/\*\*(.*?)\*\*/g, "$1")}
+                    {i < msg.text.split("\n").length - 1 && <br />}
+                  </span>
+                ))}
+              </div>
+              <p className={`text-[10px] text-tipalti-text-muted mt-1 ${msg.role === "user" ? "text-right" : ""}`}>
+                {msg.timestamp.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })}
+              </p>
+            </div>
+          </div>
+        ))}
+
+        {/* Typing indicator */}
+        {isTyping && (
+          <div className="flex justify-start">
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <div className="w-5 h-5 rounded-md bg-tipalti-blue flex items-center justify-center">
+                  <span className="text-white text-[8px] font-bold">AP</span>
+                </div>
+                <span className="text-[10px] text-tipalti-text-muted font-medium">AP Specialist</span>
+              </div>
+              <div className="bg-tipalti-bg-light rounded-xl rounded-bl-sm px-4 py-3 flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-tipalti-text-muted animate-bounce" style={{ animationDelay: "0ms" }} />
+                <div className="w-1.5 h-1.5 rounded-full bg-tipalti-text-muted animate-bounce" style={{ animationDelay: "150ms" }} />
+                <div className="w-1.5 h-1.5 rounded-full bg-tipalti-text-muted animate-bounce" style={{ animationDelay: "300ms" }} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Quick action chips */}
+      {messages.length <= 1 && (
+        <div className="px-4 pb-2 flex flex-wrap gap-1.5">
+          {quickActions.map((q) => (
+            <button
+              key={q}
+              onClick={() => {
+                setInput(q);
+                setTimeout(() => {
+                  const userMsg: ChatMessage = {
+                    id: `user-${Date.now()}`,
+                    role: "user",
+                    text: q,
+                    timestamp: new Date(),
+                  };
+                  setMessages((prev) => [...prev, userMsg]);
+                  setIsTyping(true);
+                  setTimeout(() => {
+                    const reply: ChatMessage = {
+                      id: `teammate-${Date.now()}`,
+                      role: "teammate",
+                      text: generateTeammateReply(task, q),
+                      timestamp: new Date(),
+                    };
+                    setMessages((prev) => [...prev, reply]);
+                    setIsTyping(false);
+                    setInput("");
+                  }, 800 + Math.random() * 800);
+                }, 100);
+              }}
+              className="text-[11px] font-medium text-tipalti-blue bg-tipalti-blue-light border border-blue-200 px-3 py-1.5 rounded-full hover:bg-blue-100 transition-colors"
+            >
+              {q}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Input */}
+      <div className="px-4 py-3 border-t border-tipalti-border">
+        <div className="flex items-center gap-2">
+          <input
+            ref={inputRef}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+              }
+            }}
+            placeholder="Ask about this item..."
+            className="flex-1 text-sm border border-tipalti-border rounded-lg px-3 py-2.5 bg-white placeholder:text-tipalti-text-muted focus:outline-none focus:ring-2 focus:ring-tipalti-blue focus:border-transparent"
+          />
+          <button
+            onClick={sendMessage}
+            disabled={!input.trim()}
+            className="w-9 h-9 rounded-lg bg-tipalti-blue flex items-center justify-center hover:bg-blue-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M2 8l5-5v3h5v4H7v3L2 8z" fill="white" transform="rotate(-90 8 8)" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Panel ──────────────────────────────────────────────────────────────
+
 export default function TaskDetailPanel({ task, onClose, onAction }: TaskDetailPanelProps) {
+  const [chatOpen, setChatOpen] = useState(false);
+
+  // Reset chat when task changes
+  useEffect(() => {
+    setChatOpen(false);
+  }, [task?.id]);
+
   if (!task) return null;
 
   const formatAmount = (amount: number, currency: string) =>
@@ -88,15 +360,29 @@ export default function TaskDetailPanel({ task, onClose, onAction }: TaskDetailP
     return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   };
 
+  const handleAction = (taskId: string, action: string) => {
+    if (action === "ask") {
+      setChatOpen(true);
+      return;
+    }
+    onAction(taskId, action);
+  };
+
   return (
     <>
       {/* Overlay */}
       <div
         className="fixed inset-0 bg-black/20 z-40"
-        onClick={onClose}
+        onClick={() => {
+          setChatOpen(false);
+          onClose();
+        }}
       />
 
-      {/* Panel */}
+      {/* Chat panel (slides in from the left of the detail panel) */}
+      {chatOpen && <ChatPanel task={task} onClose={() => setChatOpen(false)} />}
+
+      {/* Detail Panel */}
       <div className="fixed top-0 right-0 h-full w-[520px] bg-white z-50 shadow-side-panel flex flex-col">
         {/* Header */}
         <div className="flex items-start justify-between px-6 py-5 border-b border-tipalti-border">
@@ -114,7 +400,10 @@ export default function TaskDetailPanel({ task, onClose, onAction }: TaskDetailP
             </p>
           </div>
           <button
-            onClick={onClose}
+            onClick={() => {
+              setChatOpen(false);
+              onClose();
+            }}
             className="p-1.5 rounded-md hover:bg-tipalti-bg-light text-tipalti-text-muted transition-colors"
           >
             <CloseIcon />
@@ -288,7 +577,7 @@ export default function TaskDetailPanel({ task, onClose, onAction }: TaskDetailP
                   key={action}
                   action={action}
                   taskId={task.id}
-                  onClick={onAction}
+                  onClick={handleAction}
                 />
               ))}
             </div>

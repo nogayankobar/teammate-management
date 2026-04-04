@@ -420,11 +420,18 @@ export default function ExecutionFeed({ teammateId }: ExecutionFeedProps) {
   const handleAction = (taskId: string, action: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
     const task = teammateTasks.find((t) => t.id === taskId);
-    const entity = task?.submittedBy ?? task?.vendor;
+    if (!task) return;
+
+    // "Ask" opens the detail panel (which has the chat)
+    if (action === "ask") {
+      setSelectedTask(task);
+      return;
+    }
+
+    const entity = task.submittedBy ?? task.vendor;
     const messages: Record<string, string> = {
-      approve: `Approved — ${entity} expense cleared.`,
-      reject: `Rejected — ${entity} claim has been returned.`,
-      ask: `Chat opened for ${entity} task.`,
+      approve: `Approved — ${entity} item cleared.`,
+      reject: `Rejected — ${entity} item has been returned.`,
       fix: `Fix mode opened for ${entity}.`,
       correct: `Correction mode opened — teach the teammate.`,
       stop: `Task stopped.`,
