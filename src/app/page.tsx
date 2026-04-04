@@ -2,9 +2,12 @@
 
 import { useState } from "react";
 import Sidebar from "@/components/Sidebar";
+import TeammatesHome from "@/components/TeammatesHome";
 import TeammateHeader from "@/components/TeammateHeader";
 import ExecutionFeed from "@/components/ExecutionFeed";
+import { teammates } from "@/data/mockData";
 
+type View = { type: "home" } | { type: "profile"; teammateId: string };
 type Tab = "overview" | "execution" | "policies" | "control";
 
 function PlaceholderTab({ label }: { label: string }) {
@@ -19,12 +22,18 @@ function PlaceholderTab({ label }: { label: string }) {
 }
 
 export default function Home() {
+  const [view, setView] = useState<View>({ type: "home" });
   const [activeTab, setActiveTab] = useState<Tab>("execution");
+
+  const currentTeammate =
+    view.type === "profile"
+      ? teammates.find((t) => t.id === view.teammateId) ?? teammates[0]
+      : null;
 
   return (
     <div className="flex h-screen overflow-hidden bg-tipalti-bg-light">
       {/* Sidebar */}
-      <Sidebar />
+      <Sidebar onNavigateHome={() => setView({ type: "home" })} />
 
       {/* Main content */}
       <main className="flex-1 overflow-hidden flex flex-col">
@@ -47,8 +56,8 @@ export default function Home() {
               </svg>
               Help
             </button>
-            <div className="w-7 h-7 rounded-full bg-tipalti-blue flex items-center justify-center">
-              <span className="text-white text-[10px] font-bold">AP</span>
+            <div className="w-7 h-7 rounded-full bg-tipalti-orange flex items-center justify-center">
+              <span className="text-white text-[10px] font-bold">NY</span>
             </div>
           </div>
         </div>
@@ -56,16 +65,31 @@ export default function Home() {
         {/* Page content */}
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-[1200px] mx-auto px-6 py-6">
-            {/* Teammate header + tabs */}
-            <TeammateHeader activeTab={activeTab} onTabChange={setActiveTab} />
+            {view.type === "home" && (
+              <TeammatesHome
+                onSelectTeammate={(id) => {
+                  setActiveTab("execution");
+                  setView({ type: "profile", teammateId: id });
+                }}
+              />
+            )}
 
-            {/* Tab content */}
-            <div className="mt-6">
-              {activeTab === "execution" && <ExecutionFeed />}
-              {activeTab === "overview" && <PlaceholderTab label="Overview" />}
-              {activeTab === "policies" && <PlaceholderTab label="Policies, Guardrails & Instructions" />}
-              {activeTab === "control" && <PlaceholderTab label="Control" />}
-            </div>
+            {view.type === "profile" && currentTeammate && (
+              <>
+                <TeammateHeader
+                  teammate={currentTeammate}
+                  activeTab={activeTab}
+                  onTabChange={setActiveTab}
+                  onBack={() => setView({ type: "home" })}
+                />
+                <div className="mt-6">
+                  {activeTab === "execution" && <ExecutionFeed teammateId={currentTeammate.id} />}
+                  {activeTab === "overview" && <PlaceholderTab label="Overview" />}
+                  {activeTab === "policies" && <PlaceholderTab label="Policies, Guardrails & Instructions" />}
+                  {activeTab === "control" && <PlaceholderTab label="Control" />}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </main>

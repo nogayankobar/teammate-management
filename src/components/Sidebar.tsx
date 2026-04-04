@@ -81,7 +81,11 @@ function NavIcon({ type }: { type: string }) {
   }
 }
 
-export default function Sidebar() {
+interface SidebarProps {
+  onNavigateHome?: () => void;
+}
+
+export default function Sidebar({ onNavigateHome }: SidebarProps) {
   const [activeItem, setActiveItem] = useState("workforce");
 
   const navItems: Array<{ id: string; label: string; icon: string; badge?: number }> = [
@@ -115,7 +119,10 @@ export default function Sidebar() {
             return (
               <li key={item.id}>
                 <button
-                  onClick={() => setActiveItem(item.id)}
+                  onClick={() => {
+                    setActiveItem(item.id);
+                    if (item.id === "workforce" && onNavigateHome) onNavigateHome();
+                  }}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-colors relative ${
                     isActive
                       ? "bg-white/[0.12] text-white"

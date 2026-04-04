@@ -105,8 +105,13 @@ export default function TaskDetailPanel({ task, onClose, onAction }: TaskDetailP
               <StatusBadge status={task.status} />
               <StatusBadge type={task.type} />
             </div>
-            <h2 className="text-base font-semibold text-tipalti-text-primary">{task.vendor}</h2>
-            <p className="text-xs text-tipalti-text-secondary mt-0.5">{task.invoiceNumber}</p>
+            <h2 className="text-base font-semibold text-tipalti-text-primary">
+              {task.submittedBy ?? task.vendor}
+            </h2>
+            <p className="text-xs text-tipalti-text-secondary mt-0.5">
+              {task.invoiceNumber}
+              {task.category && <span className="text-tipalti-text-muted"> &middot; {task.category}</span>}
+            </p>
           </div>
           <button
             onClick={onClose}

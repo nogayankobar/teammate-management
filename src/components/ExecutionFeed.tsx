@@ -5,6 +5,37 @@ import { tasks as allTasks, Task, TaskStatus } from "@/data/mockData";
 import { StatusBadge, ConfidencePill } from "./StatusBadge";
 import TaskDetailPanel from "./TaskDetailPanel";
 
+// ─── Feed column config per teammate ─────────────────────────────────────────
+
+interface ColumnConfig {
+  primaryLabel: string;
+  secondaryLabel: string;
+  primaryField: (task: Task) => string;
+  secondaryField: (task: Task) => string;
+}
+
+const columnConfigs: Record<string, ColumnConfig> = {
+  "ap-specialist-01": {
+    primaryLabel: "Vendor",
+    secondaryLabel: "Invoice #",
+    primaryField: (t) => t.vendor,
+    secondaryField: (t) => t.invoiceNumber,
+  },
+  "expense-auditor-01": {
+    primaryLabel: "Employee",
+    secondaryLabel: "Expense #",
+    primaryField: (t) => t.submittedBy ?? t.vendor,
+    secondaryField: (t) => t.invoiceNumber,
+  },
+};
+
+const defaultColumnConfig: ColumnConfig = {
+  primaryLabel: "Entity",
+  secondaryLabel: "Reference",
+  primaryField: (t) => t.vendor,
+  secondaryField: (t) => t.invoiceNumber,
+};
+
 // ─── Icons ───────────────────────────────────────────────────────────────────
 
 function ChevronIcon({ open }: { open: boolean }) {
@@ -74,6 +105,43 @@ function TypeIcon({ type }: { type: string }) {
           <path d="M7 5v4M5 7l2 2 2-2" stroke="#0065FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       );
+    case "duplicate":
+      return (
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <rect x="1.5" y="1.5" width="8" height="8" rx="1" stroke="#DE350B" strokeWidth="1.3" />
+          <rect x="4.5" y="4.5" width="8" height="8" rx="1" stroke="#DE350B" strokeWidth="1.3" />
+        </svg>
+      );
+    case "policy_violation":
+      return (
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M7 1L1.5 3.5v3.5C1.5 10 4 12.5 7 13.5c3-1 5.5-3.5 5.5-6.5V3.5L7 1z" stroke="#FF8B00" strokeWidth="1.3" />
+          <path d="M7 5v3M7 9.5v.5" stroke="#FF8B00" strokeWidth="1.3" strokeLinecap="round" />
+        </svg>
+      );
+    case "fraud_signal":
+      return (
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <circle cx="7" cy="7" r="5.5" stroke="#DE350B" strokeWidth="1.3" />
+          <path d="M5 5l4 4M9 5l-4 4" stroke="#DE350B" strokeWidth="1.3" strokeLinecap="round" />
+        </svg>
+      );
+    case "receipt_audit":
+      return (
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M3 1.5h8v11l-1.5-1-1.5 1-1.5-1-1.5 1-1.5-1V1.5z" stroke="#0065FF" strokeWidth="1.3" strokeLinejoin="round" />
+          <path d="M5 4.5h4M5 7h4M5 9.5h2.5" stroke="#0065FF" strokeWidth="1" strokeLinecap="round" />
+        </svg>
+      );
+    case "spend_pattern":
+      return (
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path d="M1.5 11.5l3-4 3 2 4.5-6" stroke="#5243AA" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="4.5" cy="7.5" r="1" fill="#5243AA" />
+          <circle cx="7.5" cy="9.5" r="1" fill="#5243AA" />
+          <circle cx="12" cy="3.5" r="1" fill="#5243AA" />
+        </svg>
+      );
     default:
       return (
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -115,10 +183,10 @@ function InlineAction({
 
 // ─── Table header ─────────────────────────────────────────────────────────────
 
-function TableHeader() {
+function TableHeader({ columns }: { columns: ColumnConfig }) {
   return (
     <div className="grid grid-cols-[2fr_1fr_1fr_1fr_0.8fr_120px] gap-4 px-4 py-2.5 bg-tipalti-bg-light border-b border-tipalti-border">
-      {["Vendor", "Invoice #", "Amount", "Date", "Confidence", "Actions"].map((col) => (
+      {[columns.primaryLabel, columns.secondaryLabel, "Amount", "Date", "Confidence", "Actions"].map((col) => (
         <span key={col} className="text-[11px] font-semibold text-tipalti-text-muted uppercase tracking-wide">
           {col}
         </span>
@@ -131,10 +199,12 @@ function TableHeader() {
 
 function TaskRow({
   task,
+  columns,
   onClick,
   onAction,
 }: {
   task: Task;
+  columns: ColumnConfig;
   onClick: () => void;
   onAction: (taskId: string, action: string, e: React.MouseEvent) => void;
 }) {
@@ -151,22 +221,22 @@ function TaskRow({
       onClick={onClick}
       className="grid grid-cols-[2fr_1fr_1fr_1fr_0.8fr_120px] gap-4 px-4 py-3.5 border-b border-tipalti-border hover:bg-[#FAFBFF] cursor-pointer group transition-colors"
     >
-      {/* Vendor */}
+      {/* Primary field (Vendor / Employee) */}
       <div className="flex items-center gap-2.5 min-w-0">
         <div className="flex-shrink-0">
           <TypeIcon type={task.type} />
         </div>
         <div className="min-w-0">
           <p className="text-sm font-medium text-tipalti-text-primary truncate group-hover:text-tipalti-blue">
-            {task.vendor}
+            {columns.primaryField(task)}
           </p>
           <p className="text-[11px] text-tipalti-text-muted truncate mt-0.5">{task.summary}</p>
         </div>
       </div>
 
-      {/* Invoice # */}
+      {/* Secondary field (Invoice # / Expense #) */}
       <div className="flex items-center">
-        <span className="text-xs text-tipalti-text-secondary font-mono truncate">{task.invoiceNumber}</span>
+        <span className="text-xs text-tipalti-text-secondary font-mono truncate">{columns.secondaryField(task)}</span>
       </div>
 
       {/* Amount */}
@@ -249,12 +319,14 @@ const sectionConfig: Record<
 function TaskSection({
   status,
   tasks,
+  columns,
   onTaskClick,
   onAction,
   defaultOpen = true,
 }: {
   status: TaskStatus;
   tasks: Task[];
+  columns: ColumnConfig;
   onTaskClick: (task: Task) => void;
   onAction: (taskId: string, action: string, e: React.MouseEvent) => void;
   defaultOpen?: boolean;
@@ -287,11 +359,12 @@ function TaskSection({
             </div>
           ) : (
             <>
-              <TableHeader />
+              <TableHeader columns={columns} />
               {tasks.map((task) => (
                 <TaskRow
                   key={task.id}
                   task={task}
+                  columns={columns}
                   onClick={() => onTaskClick(task)}
                   onAction={onAction}
                 />
@@ -306,21 +379,36 @@ function TaskSection({
 
 // ─── Main Feed Component ──────────────────────────────────────────────────────
 
-export default function ExecutionFeed() {
+interface ExecutionFeedProps {
+  teammateId?: string;
+}
+
+export default function ExecutionFeed({ teammateId }: ExecutionFeedProps) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [search, setSearch] = useState("");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
+  const columns = teammateId
+    ? columnConfigs[teammateId] ?? defaultColumnConfig
+    : defaultColumnConfig;
+
+  const teammateTasks = useMemo(() => {
+    return teammateId
+      ? allTasks.filter((t) => t.teammateId === teammateId)
+      : allTasks;
+  }, [teammateId]);
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    if (!q) return allTasks;
-    return allTasks.filter(
+    if (!q) return teammateTasks;
+    return teammateTasks.filter(
       (t) =>
         t.vendor.toLowerCase().includes(q) ||
         t.invoiceNumber.toLowerCase().includes(q) ||
-        t.summary.toLowerCase().includes(q)
+        t.summary.toLowerCase().includes(q) ||
+        (t.submittedBy && t.submittedBy.toLowerCase().includes(q))
     );
-  }, [search]);
+  }, [search, teammateTasks]);
 
   const byStatus = (status: TaskStatus) => filtered.filter((t) => t.status === status);
 
@@ -331,12 +419,13 @@ export default function ExecutionFeed() {
 
   const handleAction = (taskId: string, action: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    const task = allTasks.find((t) => t.id === taskId);
+    const task = teammateTasks.find((t) => t.id === taskId);
+    const entity = task?.submittedBy ?? task?.vendor;
     const messages: Record<string, string> = {
-      approve: `Approved — ${task?.vendor} invoice sent for payment preparation.`,
-      reject: `Rejected — ${task?.vendor} invoice has been rejected.`,
-      ask: `Chat opened for ${task?.vendor} task.`,
-      fix: `Fix mode opened for ${task?.vendor} invoice.`,
+      approve: `Approved — ${entity} expense cleared.`,
+      reject: `Rejected — ${entity} claim has been returned.`,
+      ask: `Chat opened for ${entity} task.`,
+      fix: `Fix mode opened for ${entity}.`,
       correct: `Correction mode opened — teach the teammate.`,
       stop: `Task stopped.`,
     };
@@ -372,6 +461,7 @@ export default function ExecutionFeed() {
         <TaskSection
           status="needs_attention"
           tasks={byStatus("needs_attention")}
+          columns={columns}
           onTaskClick={setSelectedTask}
           onAction={handleAction}
           defaultOpen={true}
@@ -379,6 +469,7 @@ export default function ExecutionFeed() {
         <TaskSection
           status="in_progress"
           tasks={byStatus("in_progress")}
+          columns={columns}
           onTaskClick={setSelectedTask}
           onAction={handleAction}
           defaultOpen={true}
@@ -386,6 +477,7 @@ export default function ExecutionFeed() {
         <TaskSection
           status="completed"
           tasks={byStatus("completed")}
+          columns={columns}
           onTaskClick={setSelectedTask}
           onAction={handleAction}
           defaultOpen={false}

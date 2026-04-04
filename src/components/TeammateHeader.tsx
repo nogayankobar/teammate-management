@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { teammate } from "@/data/mockData";
+import { Teammate } from "@/data/mockData";
 
 type Tab = "overview" | "execution" | "policies" | "control";
 
@@ -38,18 +37,25 @@ function StatusDot({ active }: { active: boolean }) {
 }
 
 interface TeammateHeaderProps {
+  teammate: Teammate;
   activeTab: Tab;
   onTabChange: (tab: Tab) => void;
+  onBack: () => void;
 }
 
-export default function TeammateHeader({ activeTab, onTabChange }: TeammateHeaderProps) {
+export default function TeammateHeader({ teammate, activeTab, onTabChange, onBack }: TeammateHeaderProps) {
   const tokenPct = Math.round((teammate.tokensUsed / teammate.tokenLimit) * 100);
 
   return (
     <div>
       {/* Breadcrumb */}
       <div className="flex items-center gap-1.5 text-xs text-tipalti-text-muted mb-4">
-        <span className="hover:text-tipalti-blue cursor-pointer">AI Workforce</span>
+        <button
+          onClick={onBack}
+          className="hover:text-tipalti-blue cursor-pointer transition-colors"
+        >
+          AI Workforce
+        </button>
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
           <path d="M3.5 2l3 3-3 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
@@ -59,7 +65,10 @@ export default function TeammateHeader({ activeTab, onTabChange }: TeammateHeade
       {/* Teammate identity */}
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-tipalti-blue flex items-center justify-center shadow-card">
+          <div
+            className="w-12 h-12 rounded-xl flex items-center justify-center shadow-card"
+            style={{ backgroundColor: teammate.avatarColor }}
+          >
             <span className="text-white font-bold text-sm">{teammate.avatar}</span>
           </div>
           <div>
@@ -67,8 +76,10 @@ export default function TeammateHeader({ activeTab, onTabChange }: TeammateHeade
               <h1 className="text-xl font-bold text-tipalti-text-primary">{teammate.name}</h1>
               <div className="flex items-center gap-1.5">
                 <StatusDot active={teammate.status === "active"} />
-                <span className="text-xs font-medium text-tipalti-success capitalize">
-                  {teammate.status}
+                <span className={`text-xs font-medium capitalize ${
+                  teammate.status === "active" ? "text-tipalti-success" : "text-tipalti-text-muted"
+                }`}>
+                  {teammate.status === "dry_run" ? "Dry Run" : teammate.status}
                 </span>
               </div>
             </div>
@@ -102,7 +113,7 @@ export default function TeammateHeader({ activeTab, onTabChange }: TeammateHeade
 
       {/* KPIs */}
       <div className="grid grid-cols-4 gap-3 mb-6">
-        <KpiCard label="Automation rate" value={`${teammate.automationRate}%`} sub="of invoices processed" />
+        <KpiCard label="Automation rate" value={`${teammate.automationRate}%`} sub="of items processed" />
         <KpiCard label="Accuracy" value={`${teammate.accuracy}%`} sub="no human correction needed" />
         <KpiCard label="Time saved" value={teammate.timeSaved} sub="this month" />
         <KpiCard label="Cost saved" value={teammate.costSaved} sub="estimated this month" />

@@ -5,7 +5,12 @@ export type TaskType =
   | "approval"
   | "routing"
   | "anomaly"
-  | "extraction";
+  | "extraction"
+  | "duplicate"
+  | "policy_violation"
+  | "fraud_signal"
+  | "receipt_audit"
+  | "spend_pattern";
 
 export type ActionType = "approve" | "reject" | "ask" | "fix" | "correct" | "stop";
 
@@ -19,6 +24,7 @@ export interface DecisionStep {
 
 export interface Task {
   id: string;
+  teammateId: string;
   status: TaskStatus;
   type: TaskType;
   vendor: string;
@@ -34,6 +40,8 @@ export interface Task {
   contextUsed?: string[];
   codedTo?: string;
   assignedTo?: string;
+  submittedBy?: string;
+  category?: string;
   steps?: DecisionStep[];
   availableActions: ActionType[];
   confidence?: number;
@@ -41,9 +49,14 @@ export interface Task {
 }
 
 export const tasks: Task[] = [
+  // ══════════════════════════════════════════════════════════════════
+  // AP SPECIALIST TASKS
+  // ══════════════════════════════════════════════════════════════════
+
   // ── NEEDS ATTENTION ──────────────────────────────────────────────
   {
     id: "task-001",
+    teammateId: "ap-specialist-01",
     status: "needs_attention",
     type: "anomaly",
     vendor: "AWS",
@@ -101,6 +114,7 @@ export const tasks: Task[] = [
   },
   {
     id: "task-002",
+    teammateId: "ap-specialist-01",
     status: "needs_attention",
     type: "validation",
     vendor: "Acme Software Ltd.",
@@ -154,6 +168,7 @@ export const tasks: Task[] = [
   },
   {
     id: "task-003",
+    teammateId: "ap-specialist-01",
     status: "needs_attention",
     type: "routing",
     vendor: "Figma",
@@ -203,6 +218,7 @@ export const tasks: Task[] = [
   // ── IN PROGRESS ──────────────────────────────────────────────────
   {
     id: "task-004",
+    teammateId: "ap-specialist-01",
     status: "in_progress",
     type: "extraction",
     vendor: "Shopify",
@@ -237,6 +253,7 @@ export const tasks: Task[] = [
   },
   {
     id: "task-005",
+    teammateId: "ap-specialist-01",
     status: "in_progress",
     type: "validation",
     vendor: "Stripe",
@@ -274,6 +291,7 @@ export const tasks: Task[] = [
   // ── COMPLETED ─────────────────────────────────────────────────────
   {
     id: "task-006",
+    teammateId: "ap-specialist-01",
     status: "completed",
     type: "bookkeeping",
     vendor: "Google Cloud",
@@ -332,6 +350,7 @@ export const tasks: Task[] = [
   },
   {
     id: "task-007",
+    teammateId: "ap-specialist-01",
     status: "completed",
     type: "routing",
     vendor: "Figma (Annual)",
@@ -375,6 +394,7 @@ export const tasks: Task[] = [
   },
   {
     id: "task-008",
+    teammateId: "ap-specialist-01",
     status: "completed",
     type: "bookkeeping",
     vendor: "Zoom",
@@ -417,6 +437,7 @@ export const tasks: Task[] = [
   },
   {
     id: "task-009",
+    teammateId: "ap-specialist-01",
     status: "completed",
     type: "bookkeeping",
     vendor: "HubSpot",
@@ -457,19 +478,523 @@ export const tasks: Task[] = [
     availableActions: ["ask", "correct"],
     confidence: 97,
   },
+
+  // ══════════════════════════════════════════════════════════════════
+  // EXPENSE AUDITOR TASKS
+  // ══════════════════════════════════════════════════════════════════
+
+  // ── NEEDS ATTENTION ──────────────────────────────────────────────
+  {
+    id: "ea-001",
+    teammateId: "expense-auditor-01",
+    status: "needs_attention",
+    type: "duplicate",
+    vendor: "Uber",
+    invoiceNumber: "EXP-2024-4812",
+    amount: 47.5,
+    currency: "USD",
+    date: "2024-07-30",
+    summary: "Duplicate Uber receipt — same trip submitted twice by John M.",
+    submittedBy: "John Martinez (Sales)",
+    category: "Travel & Transportation",
+    issue:
+      "Two expense claims contain the same Uber receipt ($47.50 on Jul 28, JFK → Manhattan). The receipt hash matches exactly. One was submitted on Jul 28, the other on Jul 30. This appears to be a duplicate submission.",
+    suggestedAction:
+      "Reject the duplicate claim (EXP-2024-4812) and keep the original (EXP-2024-4790). Notify the employee.",
+    reasoning:
+      "Receipt image hash comparison returned a 100% match between EXP-2024-4812 and EXP-2024-4790. Same merchant, amount, date, and pickup/dropoff locations. The second submission was made 2 days after the first — likely accidental resubmission.",
+    contextUsed: [
+      "Receipt hash matching: 100% match with EXP-2024-4790",
+      "Same merchant: Uber, same amount: $47.50, same date: Jul 28",
+      "Employee history: John Martinez — no prior duplicates",
+      "Policy: duplicate receipts require finance review",
+    ],
+    steps: [
+      {
+        id: "s1",
+        timestamp: "2024-07-30T10:15:00Z",
+        action: "Expense submitted",
+        detail: "John Martinez submitted expense EXP-2024-4812 ($47.50 Uber).",
+      },
+      {
+        id: "s2",
+        timestamp: "2024-07-30T10:15:02Z",
+        action: "Receipt scanned",
+        detail: "Extracted: Uber, $47.50, Jul 28, JFK → Manhattan.",
+        tool: "Receipt OCR",
+      },
+      {
+        id: "s3",
+        timestamp: "2024-07-30T10:15:04Z",
+        action: "Duplicate detected",
+        detail: "Receipt hash 100% match with EXP-2024-4790 (submitted Jul 28). Flagging as duplicate.",
+        tool: "Duplicate detection engine",
+      },
+      {
+        id: "s4",
+        timestamp: "2024-07-30T10:15:05Z",
+        action: "Escalated to finance",
+        detail: "Duplicate claim flagged for review. Recommended action: reject.",
+      },
+    ],
+    availableActions: ["reject", "approve", "ask"],
+    confidence: 99,
+    policyTriggered: "Duplicate receipt detection",
+  },
+
+  // ── IN PROGRESS ──────────────────────────────────────────────────
+  {
+    id: "ea-002",
+    teammateId: "expense-auditor-01",
+    status: "in_progress",
+    type: "receipt_audit",
+    vendor: "Various",
+    invoiceNumber: "RPT-2024-0891",
+    amount: 1842.3,
+    currency: "USD",
+    date: "2024-07-30",
+    summary: "Auditing expense report with 14 line items — Lisa Park (Marketing)",
+    submittedBy: "Lisa Park (Marketing)",
+    category: "Client Entertainment & Travel",
+    reasoning:
+      "Currently reviewing 14 line items in this expense report. Cross-checking each receipt against the T&E policy, verifying amounts, dates, and merchant categories. 9 of 14 items reviewed so far — no issues found yet.",
+    contextUsed: [
+      "Employee: Lisa Park — Marketing Manager, no prior violations",
+      "T&E policy: client entertainment limit $150/person, hotel limit $250/night",
+      "Report covers: Jul 22-26 client visit to NYC",
+    ],
+    steps: [
+      {
+        id: "s1",
+        timestamp: "2024-07-30T11:00:00Z",
+        action: "Report submitted",
+        detail: "Lisa Park submitted RPT-2024-0891 with 14 line items totaling $1,842.30.",
+      },
+      {
+        id: "s2",
+        timestamp: "2024-07-30T11:00:05Z",
+        action: "Audit in progress",
+        detail: "Reviewing each receipt against T&E policy. 9/14 items checked — all compliant so far.",
+        tool: "Policy compliance checker",
+      },
+    ],
+    availableActions: ["stop", "ask"],
+    confidence: 94,
+  },
+  {
+    id: "ea-003",
+    teammateId: "expense-auditor-01",
+    status: "in_progress",
+    type: "spend_pattern",
+    vendor: "Multiple vendors",
+    invoiceNumber: "BATCH-2024-W31",
+    amount: 12450,
+    currency: "USD",
+    date: "2024-07-30",
+    summary: "Running weekly spend pattern analysis across all departments",
+    submittedBy: "System (automated)",
+    category: "Spend Analysis",
+    reasoning:
+      "Analyzing week 31 expense submissions ($12,450 across 47 claims). Looking for anomalies: unusual spending spikes, category outliers, new merchant patterns, and weekend transactions.",
+    contextUsed: [
+      "Week 31 total: $12,450 across 47 claims (23 employees)",
+      "Prior 4-week average: $11,200/week",
+      "Focus areas: weekend spend, split transactions, high-frequency merchants",
+    ],
+    steps: [
+      {
+        id: "s1",
+        timestamp: "2024-07-30T06:00:00Z",
+        action: "Weekly analysis triggered",
+        detail: "Automated weekly spend pattern analysis started for W31.",
+      },
+      {
+        id: "s2",
+        timestamp: "2024-07-30T06:00:15Z",
+        action: "Data aggregation complete",
+        detail: "47 claims, 23 employees, $12,450 total. Running anomaly models...",
+        tool: "Spend pattern analyzer",
+      },
+    ],
+    availableActions: ["stop", "ask"],
+    confidence: 88,
+  },
+
+  // ── COMPLETED ─────────────────────────────────────────────────────
+  {
+    id: "ea-004",
+    teammateId: "expense-auditor-01",
+    status: "completed",
+    type: "policy_violation",
+    vendor: "The Capital Grille",
+    invoiceNumber: "EXP-2024-4801",
+    amount: 485,
+    currency: "USD",
+    date: "2024-07-29",
+    summary: "Policy violation — client dinner exceeded per-person limit",
+    submittedBy: "Mike Chen (Sales)",
+    category: "Client Entertainment",
+    reasoning:
+      "Mike Chen submitted a client dinner at The Capital Grille for $485. The receipt shows 2 guests, making the per-person cost $242.50. This exceeds the $150/person client entertainment limit. Flagged and sent back to employee with explanation.",
+    contextUsed: [
+      "T&E policy: client entertainment limit $150/person",
+      "Receipt: The Capital Grille, $485, 2 guests",
+      "Per-person cost: $242.50 (62% above limit)",
+      "Employee history: Mike Chen — 1 prior violation (Q1 2024)",
+    ],
+    codedTo: "Returned to employee",
+    steps: [
+      {
+        id: "s1",
+        timestamp: "2024-07-29T15:30:00Z",
+        action: "Expense submitted",
+        detail: "Mike Chen submitted EXP-2024-4801 ($485 The Capital Grille).",
+      },
+      {
+        id: "s2",
+        timestamp: "2024-07-29T15:30:03Z",
+        action: "Receipt analyzed",
+        detail: "Extracted: The Capital Grille, $485, 2 guests. Per-person: $242.50.",
+        tool: "Receipt OCR + guest detection",
+      },
+      {
+        id: "s3",
+        timestamp: "2024-07-29T15:30:05Z",
+        action: "Policy violation detected",
+        detail: "$242.50/person exceeds $150 limit by 62%. Prior violation on record.",
+        tool: "Policy compliance checker",
+      },
+      {
+        id: "s4",
+        timestamp: "2024-07-29T15:30:06Z",
+        action: "Returned to employee",
+        detail: "Expense returned with explanation: 'Per-person cost ($242.50) exceeds $150 limit. Please split or obtain manager approval.'",
+      },
+    ],
+    availableActions: ["ask", "correct"],
+    confidence: 97,
+    policyTriggered: "Client entertainment: $150/person limit",
+  },
+  {
+    id: "ea-005",
+    teammateId: "expense-auditor-01",
+    status: "completed",
+    type: "fraud_signal",
+    vendor: "Amazon",
+    invoiceNumber: "EXP-2024-4795",
+    amount: 289,
+    currency: "USD",
+    date: "2024-07-29",
+    summary: "Weekend purchase flagged — personal item suspected, cleared after review",
+    submittedBy: "Sarah Kim (Engineering)",
+    category: "Office Supplies",
+    reasoning:
+      "Sarah Kim submitted a $289 Amazon purchase made on Saturday (Jul 27). Items: 2x monitor stands + USB hub. Weekend purchase triggered a fraud signal. However, employee provided a note: 'Setting up home office per remote work policy.' Verified against remote work equipment policy — items qualify. Auto-cleared.",
+    contextUsed: [
+      "Fraud signal: weekend purchase on personal Amazon account",
+      "Items: 2x monitor stands ($119 ea), 1x USB hub ($51)",
+      "Remote work policy: up to $500 for home office equipment",
+      "Employee note: 'Setting up home office per remote work policy'",
+      "Employee history: Sarah Kim — no prior flags",
+    ],
+    codedTo: "Remote Work Equipment (GL-5510)",
+    steps: [
+      {
+        id: "s1",
+        timestamp: "2024-07-29T09:00:00Z",
+        action: "Expense submitted",
+        detail: "Sarah Kim submitted EXP-2024-4795 ($289 Amazon).",
+      },
+      {
+        id: "s2",
+        timestamp: "2024-07-29T09:00:03Z",
+        action: "Weekend purchase flagged",
+        detail: "Purchase made on Saturday Jul 27. Triggering fraud signal review.",
+        tool: "Fraud signal detector",
+      },
+      {
+        id: "s3",
+        timestamp: "2024-07-29T09:00:05Z",
+        action: "Employee note reviewed",
+        detail: "Note: 'Setting up home office per remote work policy.' Checking policy...",
+        tool: "Policy matcher",
+      },
+      {
+        id: "s4",
+        timestamp: "2024-07-29T09:00:07Z",
+        action: "Auto-cleared",
+        detail: "Items qualify under remote work equipment policy (up to $500). No further action needed.",
+      },
+    ],
+    availableActions: ["ask", "correct"],
+    confidence: 93,
+    policyTriggered: "Weekend purchase review → cleared via remote work policy",
+  },
+  {
+    id: "ea-006",
+    teammateId: "expense-auditor-01",
+    status: "completed",
+    type: "receipt_audit",
+    vendor: "Delta Airlines",
+    invoiceNumber: "EXP-2024-4788",
+    amount: 624,
+    currency: "USD",
+    date: "2024-07-28",
+    summary: "Flight expense approved — within policy, receipt verified",
+    submittedBy: "David Park (Product)",
+    category: "Travel — Airfare",
+    reasoning:
+      "David Park submitted a Delta Airlines round-trip SFO→JFK ($624). Economy class, booked 3 weeks in advance. Within the airfare policy ($800 max domestic round-trip). Receipt verified, booking confirmation matches. Auto-approved.",
+    contextUsed: [
+      "T&E policy: domestic round-trip airfare limit $800 (economy)",
+      "Booking: Delta, SFO→JFK, economy, booked Jul 7 for Jul 22",
+      "Receipt verified: booking confirmation matches claim",
+      "Employee: David Park — no violations",
+    ],
+    codedTo: "Travel — Airfare (GL-6100)",
+    steps: [
+      {
+        id: "s1",
+        timestamp: "2024-07-28T14:00:00Z",
+        action: "Expense submitted",
+        detail: "David Park submitted EXP-2024-4788 ($624 Delta Airlines).",
+      },
+      {
+        id: "s2",
+        timestamp: "2024-07-28T14:00:03Z",
+        action: "Receipt verified",
+        detail: "Booking confirmation matches: Delta, SFO→JFK, economy, $624.",
+        tool: "Receipt OCR + booking matcher",
+      },
+      {
+        id: "s3",
+        timestamp: "2024-07-28T14:00:05Z",
+        action: "Policy check passed",
+        detail: "$624 is within $800 domestic round-trip limit. Economy class confirmed.",
+        tool: "Policy compliance checker",
+      },
+      {
+        id: "s4",
+        timestamp: "2024-07-28T14:00:06Z",
+        action: "Auto-approved",
+        detail: "All checks passed. Coded to Travel — Airfare (GL-6100).",
+      },
+    ],
+    availableActions: ["ask", "correct"],
+    confidence: 99,
+    policyTriggered: "Auto-approve: airfare within policy, receipt verified",
+  },
+  {
+    id: "ea-007",
+    teammateId: "expense-auditor-01",
+    status: "completed",
+    type: "receipt_audit",
+    vendor: "Hilton Hotels",
+    invoiceNumber: "EXP-2024-4785",
+    amount: 738,
+    currency: "USD",
+    date: "2024-07-28",
+    summary: "Hotel stay approved — 3 nights within nightly limit",
+    submittedBy: "David Park (Product)",
+    category: "Travel — Lodging",
+    reasoning:
+      "David Park submitted 3 nights at Hilton NYC ($246/night = $738 total). The nightly rate is within the $250/night policy for NYC. Linked to the same trip as flight EXP-2024-4788. Auto-approved.",
+    contextUsed: [
+      "T&E policy: hotel limit $250/night for NYC metro area",
+      "Stay: Hilton NYC, Jul 22-25, 3 nights @ $246/night",
+      "Linked trip: same dates as flight EXP-2024-4788 (SFO→JFK)",
+    ],
+    codedTo: "Travel — Lodging (GL-6110)",
+    steps: [
+      {
+        id: "s1",
+        timestamp: "2024-07-28T14:05:00Z",
+        action: "Expense submitted",
+        detail: "David Park submitted EXP-2024-4785 ($738 Hilton Hotels).",
+      },
+      {
+        id: "s2",
+        timestamp: "2024-07-28T14:05:03Z",
+        action: "Receipt verified",
+        detail: "Hilton NYC, 3 nights, $246/night. Confirmation number verified.",
+        tool: "Receipt OCR",
+      },
+      {
+        id: "s3",
+        timestamp: "2024-07-28T14:05:05Z",
+        action: "Policy check passed",
+        detail: "$246/night within $250 NYC nightly limit. Trip linked to EXP-2024-4788.",
+        tool: "Policy compliance checker",
+      },
+      {
+        id: "s4",
+        timestamp: "2024-07-28T14:05:06Z",
+        action: "Auto-approved",
+        detail: "All checks passed. Coded to Travel — Lodging (GL-6110).",
+      },
+    ],
+    availableActions: ["ask", "correct"],
+    confidence: 98,
+    policyTriggered: "Auto-approve: hotel within nightly limit",
+  },
+  {
+    id: "ea-008",
+    teammateId: "expense-auditor-01",
+    status: "completed",
+    type: "validation",
+    vendor: "Starbucks",
+    invoiceNumber: "EXP-2024-4779",
+    amount: 12.4,
+    currency: "USD",
+    date: "2024-07-27",
+    summary: "Missing receipt — auto-approved under $25 threshold",
+    submittedBy: "Amy Wong (Design)",
+    category: "Meals",
+    reasoning:
+      "Amy Wong submitted $12.40 for Starbucks with no receipt attached. Per policy, expenses under $25 do not require a receipt. Auto-approved.",
+    contextUsed: [
+      "T&E policy: receipt not required for expenses under $25",
+      "Amount: $12.40 — below $25 threshold",
+      "Employee: Amy Wong — no violations",
+    ],
+    codedTo: "Meals & Snacks (GL-6300)",
+    steps: [
+      {
+        id: "s1",
+        timestamp: "2024-07-27T16:00:00Z",
+        action: "Expense submitted",
+        detail: "Amy Wong submitted EXP-2024-4779 ($12.40 Starbucks, no receipt).",
+      },
+      {
+        id: "s2",
+        timestamp: "2024-07-27T16:00:02Z",
+        action: "Missing receipt detected",
+        detail: "No receipt attached. Checking receipt-required threshold...",
+        tool: "Receipt validator",
+      },
+      {
+        id: "s3",
+        timestamp: "2024-07-27T16:00:03Z",
+        action: "Auto-approved",
+        detail: "$12.40 is below $25 no-receipt threshold. Auto-approved.",
+      },
+    ],
+    availableActions: ["ask", "correct"],
+    confidence: 100,
+    policyTriggered: "Auto-approve: no receipt required under $25",
+  },
 ];
 
-export const teammate = {
-  id: "ap-specialist-01",
-  name: "AP Specialist",
-  avatar: "AP",
-  status: "active" as const,
-  model: "Claude Opus 4",
-  automationRate: 78,
-  accuracy: 96.4,
-  timeSaved: "14.2 hrs",
-  costSaved: "$2,840",
-  tasksToday: 12,
-  tokensUsed: 124000,
-  tokenLimit: 500000,
-};
+export type TeammateStatus = "active" | "paused" | "dry_run" | "setup";
+
+export interface Teammate {
+  id: string;
+  name: string;
+  domain: string;
+  avatar: string;
+  avatarColor: string;
+  status: TeammateStatus;
+  model: string;
+  description: string;
+  automationRate: number;
+  accuracy: number;
+  timeSaved: string;
+  costSaved: string;
+  tasksToday: number;
+  tasksTotal: number;
+  alertCount: number;
+  tokensUsed: number;
+  tokenLimit: number;
+  lastActive: string;
+  capabilities: string[];
+}
+
+export const teammates: Teammate[] = [
+  {
+    id: "ap-specialist-01",
+    name: "AP Specialist",
+    domain: "Accounts Payable",
+    avatar: "AP",
+    avatarColor: "#0052CC",
+    status: "active",
+    model: "Claude Opus 4",
+    description:
+      "Extracts, codes, validates, and prepares invoices for payment. Matches invoices to POs and contracts.",
+    automationRate: 78,
+    accuracy: 96.4,
+    timeSaved: "14.2 hrs",
+    costSaved: "$2,840",
+    tasksToday: 12,
+    tasksTotal: 342,
+    alertCount: 3,
+    tokensUsed: 124000,
+    tokenLimit: 500000,
+    lastActive: "2 min ago",
+    capabilities: [
+      "Invoice extraction",
+      "GL coding",
+      "PO matching",
+      "Anomaly detection",
+      "Approval routing",
+    ],
+  },
+  {
+    id: "expense-auditor-01",
+    name: "Expense Auditor",
+    domain: "Expenses",
+    avatar: "EA",
+    avatarColor: "#00875A",
+    status: "active",
+    model: "Claude Opus 4",
+    description:
+      "Reviews submitted expenses for anomalies, fraud signals, duplicate claims, and policy violations. Surfaces only exceptions.",
+    automationRate: 91,
+    accuracy: 98.1,
+    timeSaved: "8.5 hrs",
+    costSaved: "$1,650",
+    tasksToday: 27,
+    tasksTotal: 1204,
+    alertCount: 1,
+    tokensUsed: 89000,
+    tokenLimit: 300000,
+    lastActive: "5 min ago",
+    capabilities: [
+      "Duplicate detection",
+      "Receipt matching",
+      "Policy compliance",
+      "Fraud signal detection",
+      "Spend pattern analysis",
+    ],
+  },
+  {
+    id: "invoice-collector-01",
+    name: "Invoice Collector",
+    domain: "Accounts Payable",
+    avatar: "IC",
+    avatarColor: "#5243AA",
+    status: "paused",
+    model: "Claude Opus 4",
+    description:
+      "Collects invoices from email, vendor portals, and employees. Chases missing invoices and detects document types.",
+    automationRate: 85,
+    accuracy: 94.2,
+    timeSaved: "6.1 hrs",
+    costSaved: "$980",
+    tasksToday: 0,
+    tasksTotal: 178,
+    alertCount: 0,
+    tokensUsed: 42000,
+    tokenLimit: 200000,
+    lastActive: "3 hrs ago",
+    capabilities: [
+      "Email ingestion",
+      "Portal scraping",
+      "Document classification",
+      "Missing invoice detection",
+      "Multi-invoice splitting",
+    ],
+  },
+];
+
+// Legacy single teammate reference (for backward compat)
+export const teammate = teammates[0];

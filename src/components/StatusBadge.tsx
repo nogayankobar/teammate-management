@@ -35,6 +35,11 @@ const typeConfig: Record<TaskType, { label: string; className: string }> = {
   routing: { label: "Routing", className: "bg-gray-100 text-gray-600" },
   anomaly: { label: "Anomaly", className: "bg-tipalti-danger-bg text-tipalti-danger" },
   extraction: { label: "Extraction", className: "bg-tipalti-info-bg text-tipalti-blue" },
+  duplicate: { label: "Duplicate", className: "bg-tipalti-danger-bg text-tipalti-danger" },
+  policy_violation: { label: "Policy Violation", className: "bg-tipalti-warning-bg text-tipalti-warning" },
+  fraud_signal: { label: "Fraud Signal", className: "bg-tipalti-danger-bg text-tipalti-danger" },
+  receipt_audit: { label: "Receipt Audit", className: "bg-tipalti-info-bg text-tipalti-blue" },
+  spend_pattern: { label: "Spend Pattern", className: "bg-tipalti-purple-bg text-tipalti-purple" },
 };
 
 export function StatusBadge({ status, type, label, size = "sm" }: StatusBadgeProps) {
