@@ -885,7 +885,7 @@ export const tasks: Task[] = [
   },
 ];
 
-export type TeammateStatus = "active" | "paused" | "dry_run" | "setup";
+export type TeammateStatus = "active" | "paused" | "dry_run" | "setup" | "inactive";
 
 export interface Teammate {
   id: string;
@@ -907,6 +907,12 @@ export interface Teammate {
   tokenLimit: number;
   lastActive: string;
   capabilities: string[];
+  projectedImpact?: {
+    timeSaved: string;
+    costSaved: string;
+    highlight: string;
+    adoptionRate: string;
+  };
 }
 
 export const teammates: Teammate[] = [
@@ -967,12 +973,40 @@ export const teammates: Teammate[] = [
     ],
   },
   {
+    id: "approval-coordinator-01",
+    name: "Approval Coordinator",
+    domain: "Accounts Payable",
+    avatar: "AC",
+    avatarColor: "#0065FF",
+    status: "paused",
+    model: "Claude Opus 4",
+    description:
+      "Routes invoices and payment requests through multi-level approval chains. Identifies bottlenecks, sends reminders, and escalates overdue approvals.",
+    automationRate: 82,
+    accuracy: 95.7,
+    timeSaved: "9.3 hrs",
+    costSaved: "$1,420",
+    tasksToday: 0,
+    tasksTotal: 256,
+    alertCount: 0,
+    tokensUsed: 67000,
+    tokenLimit: 250000,
+    lastActive: "2 days ago",
+    capabilities: [
+      "Multi-level routing",
+      "Approval chain optimization",
+      "Bottleneck detection",
+      "Escalation management",
+      "SLA monitoring",
+    ],
+  },
+  {
     id: "invoice-collector-01",
     name: "Invoice Collector",
     domain: "Accounts Payable",
     avatar: "IC",
     avatarColor: "#5243AA",
-    status: "paused",
+    status: "inactive",
     model: "Claude Opus 4",
     description:
       "Collects invoices from email, vendor portals, and employees. Chases missing invoices and detects document types.",
@@ -993,6 +1027,12 @@ export const teammates: Teammate[] = [
       "Missing invoice detection",
       "Multi-invoice splitting",
     ],
+    projectedImpact: {
+      timeSaved: "~6 hrs/week",
+      costSaved: "~$980/month",
+      highlight: "Your team spends ~6 hours/week chasing invoices across email and vendor portals. Invoice Collector eliminates this entirely.",
+      adoptionRate: "Activated by 78% of companies like yours",
+    },
   },
 ];
 
