@@ -96,6 +96,7 @@ export const instructionVersions: InstructionVersion[] = [
     content: `## Routing
 
 - Figma invoices → always route to VP Design (Sarah Chen)
+- Figma invoices → always route to VP Product (Sahar Shlomo)
 - Split AWS invoices by cost center using the tag in the description
 
 ## Escalation thresholds

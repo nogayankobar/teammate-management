@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { instructionVersions, InstructionVersion } from "@/data/mockData";
 
 // ─── Validation ───────────────────────────────────────────────────────────────
@@ -24,6 +24,40 @@ function validate(content: string): string[] {
     });
   });
   return warnings;
+}
+
+// ─── Conflict detection ───────────────────────────────────────────────────────
+
+function detectConflictPairs(content: string): Array<[string, string]> {
+  const pairs: Array<[string, string]> = [];
+  const bullets = content
+    .split("\n")
+    .map((l) => l.trim())
+    .filter((l) => l.startsWith("- ") || l.startsWith("* "))
+    .map((l) => l.slice(2).trim());
+
+  const bySubject = new Map<string, string[]>();
+  for (const bullet of bullets) {
+    const idx = bullet.indexOf("→");
+    if (idx > -1) {
+      const subject = bullet.slice(0, idx).trim().toLowerCase();
+      if (!bySubject.has(subject)) bySubject.set(subject, []);
+      bySubject.get(subject)!.push(bullet);
+    }
+  }
+
+  for (const group of Array.from(bySubject.values())) {
+    if (group.length > 1) {
+      const actions = new Set(
+        group.map((l) => l.slice(l.indexOf("→") + 1).trim().toLowerCase())
+      );
+      if (actions.size > 1) {
+        pairs.push([group[0], group[1]]);
+      }
+    }
+  }
+
+  return pairs;
 }
 
 // ─── Method badge ─────────────────────────────────────────────────────────────
@@ -55,10 +89,10 @@ function renderInline(text: string): JSX.Element {
   );
 }
 
-function MarkdownPreview({ content }: { content: string }): JSX.Element {
+function MarkdownPreview({ content, conflictSet }: { content: string; conflictSet?: Set<string> }): JSX.Element {
   const lines = content.split("\n");
   const elements: JSX.Element[] = [];
-  let bulletBuffer: string[] = [];
+  let bulletBuffer: Array<{ text: string; conflict: boolean }> = [];
   let key = 0;
 
   const flushBullets = () => {
@@ -67,12 +101,22 @@ function MarkdownPreview({ content }: { content: string }): JSX.Element {
     bulletBuffer = [];
     elements.push(
       <ul key={key++} className="my-3 space-y-1.5 pl-2">
-        {buf.map((b, i) => (
-          <li key={i} className="text-sm text-tipalti-text-primary leading-relaxed flex gap-2.5">
-            <span className="text-tipalti-text-muted mt-0.5 flex-shrink-0 select-none">·</span>
-            <span>{renderInline(b)}</span>
-          </li>
-        ))}
+        {buf.map((item, i) =>
+          item.conflict ? (
+            <li key={i} className="text-sm text-tipalti-text-primary leading-relaxed flex gap-2 rounded-md bg-red-50 border border-red-200 px-2.5 py-1.5 -mx-0.5">
+              <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="#DE350B" strokeWidth="1.4" className="flex-shrink-0 mt-0.5" style={{ display: "block" }}>
+                <path d="M7 1.5L1 12.5h12L7 1.5z" strokeLinejoin="round" />
+                <path d="M7 6v2.5M7 10.5v.5" strokeLinecap="round" />
+              </svg>
+              <span>{renderInline(item.text)}</span>
+            </li>
+          ) : (
+            <li key={i} className="text-sm text-tipalti-text-primary leading-relaxed flex gap-2.5">
+              <span className="text-tipalti-text-muted mt-0.5 flex-shrink-0 select-none">·</span>
+              <span>{renderInline(item.text)}</span>
+            </li>
+          )
+        )}
       </ul>
     );
   };
@@ -94,7 +138,8 @@ function MarkdownPreview({ content }: { content: string }): JSX.Element {
         </h3>
       );
     } else if (t.startsWith("- ") || t.startsWith("* ")) {
-      bulletBuffer.push(t.slice(2));
+      const bulletText = t.slice(2);
+      bulletBuffer.push({ text: bulletText, conflict: !!conflictSet?.has(bulletText) });
     } else if (t === "") {
       flushBullets();
     } else {
@@ -317,6 +362,14 @@ export default function Instructions() {
   const [pendingMethod, setPendingMethod]   = useState<InstructionVersion["method"]>("chat");
   const msgId = useRef(0);
 
+  // Conflict detection
+  const conflictPairs = useMemo(() => detectConflictPairs(content), [content]);
+  const conflictSet = useMemo(() => {
+    const s = new Set<string>();
+    conflictPairs.forEach(([a, b]) => { s.add(a); s.add(b); });
+    return s;
+  }, [conflictPairs]);
+
   const nextId = () => `m${++msgId.current}`;
 
   const pushMsg = (role: "user" | "ai", text: string, extras?: Partial<ChatMsg>) =>
@@ -332,6 +385,33 @@ export default function Instructions() {
     setIsTyping(true);
     await sleep(ms);
     setIsTyping(false);
+  };
+
+  // ── Conflict resolution chat ─────────────────────────────────────────────────
+
+  const openChatForConflict = async () => {
+    setChatMessages([]);
+    setChatInput("");
+    setPendingContent(null);
+    setPendingMethod("chat");
+    setChatOpen(true);
+    await sleep(250);
+    await aiType(900);
+    if (conflictPairs.length > 0) {
+      const [rule1, rule2] = conflictPairs[0];
+      const dest1 = rule1.split("→")[1]?.trim() ?? rule1;
+      const dest2 = rule2.split("→")[1]?.trim() ?? rule2;
+      await pushMsg(
+        "ai",
+        `I found a conflict in your **Routing** instructions:\n\n• "${rule1}"\n• "${rule2}"\n\nBoth rules match the same invoices but route to different approvers. Which one should take priority?`,
+        {
+          options: [
+            { label: `Keep: ${dest1}`, value: "keep_first" },
+            { label: `Keep: ${dest2}`, value: "keep_second" },
+          ],
+        }
+      );
+    }
   };
 
   // ── Upload flow ─────────────────────────────────────────────────────────────
@@ -379,7 +459,7 @@ export default function Instructions() {
     setPendingMethod("upload");
   };
 
-  // ── Option selected in upload flow ──────────────────────────────────────────
+  // ── Option selected (upload flow or conflict resolution) ────────────────────
 
   const handleOptionSelect = async (msgId: string, value: string) => {
     setChatMessages((prev) =>
@@ -388,6 +468,34 @@ export default function Instructions() {
 
     const nextVer = versions[0].version + 1;
 
+    // Conflict resolution
+    if (value === "keep_first" || value === "keep_second") {
+      const [rule1, rule2] = conflictPairs[0] ?? ["", ""];
+      const keepRule  = value === "keep_first" ? rule1 : rule2;
+      const dropRule  = value === "keep_first" ? rule2 : rule1;
+      const keepLabel = keepRule.split("→")[1]?.trim() ?? keepRule;
+
+      await pushMsg("user", `Keep: ${keepLabel}`);
+      await aiType(1200);
+
+      const newContent = content
+        .split("\n")
+        .filter((l) => {
+          const t = l.trim();
+          return !(t.startsWith("- ") && t.slice(2).trim() === dropRule);
+        })
+        .join("\n");
+
+      setPendingContent(newContent);
+      setPendingMethod("chat");
+      await pushMsg(
+        "ai",
+        `Got it. I'll remove the conflicting rule:\n\n"${dropRule}"\n\nAnd keep:\n\n"${keepRule}"\n\nThis will become version ${nextVer}. Type "yes" to confirm.`
+      );
+      return;
+    }
+
+    // Upload flow options
     if (value === "flag_new") {
       await pushMsg("user", "New vendors always flagged first, then SaaS rule applies");
       await aiType(1400);
@@ -637,6 +745,22 @@ export default function Instructions() {
                     )}
                   </div>
 
+                  {/* Ask AI */}
+                  <button
+                    onClick={() => {
+                      setChatMessages([]);
+                      setChatInput("");
+                      setPendingContent(null);
+                      setChatOpen(true);
+                    }}
+                    className="flex items-center gap-1.5 text-[12px] font-medium text-tipalti-blue border border-tipalti-blue rounded-md px-2.5 py-1.5 bg-white hover:bg-blue-50 transition-colors"
+                  >
+                    <svg width="11" height="11" viewBox="0 0 14 14" style={{ flexShrink: 0 }}>
+                      <path d="M7 1L13 7L7 13L1 7L7 1Z" fill="#0065FF" />
+                    </svg>
+                    Ask AI
+                  </button>
+
                   {/* Upload file */}
                   <button
                     onClick={() => fileRef.current?.click()}
@@ -689,7 +813,29 @@ export default function Instructions() {
           {/* Card body */}
           {mode === "preview" ? (
             <div className="flex-1">
-              <MarkdownPreview content={content} />
+              {/* Conflict banner */}
+              {conflictPairs.length > 0 && (
+                <div className="mx-5 mt-3.5 rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 flex items-center gap-2.5">
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#DE350B" strokeWidth="1.4" style={{ flexShrink: 0 }}>
+                    <path d="M7 1.5L1 12.5h12L7 1.5z" strokeLinejoin="round" />
+                    <path d="M7 5.5v3M7 10v.5" strokeLinecap="round" />
+                  </svg>
+                  <p className="text-[12px] text-red-800 flex-1">
+                    <span className="font-semibold">{conflictPairs.length} conflict detected</span>
+                    {" — "}2 rules apply to &ldquo;{conflictPairs[0][0].split("→")[0].trim()}&rdquo; but route to different approvers.
+                  </p>
+                  <button
+                    onClick={openChatForConflict}
+                    className="text-[12px] font-semibold text-tipalti-blue hover:underline whitespace-nowrap flex-shrink-0 flex items-center gap-1"
+                  >
+                    Resolve with AI
+                    <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.4">
+                      <path d="M2 8L8 2M8 2H5M8 2V5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+              <MarkdownPreview content={content} conflictSet={conflictSet} />
             </div>
           ) : (
             <div className="flex-1 flex flex-col">

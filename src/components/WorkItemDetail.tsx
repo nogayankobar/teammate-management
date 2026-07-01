@@ -46,12 +46,24 @@ interface FMsg {
 
 function buildFeedbackContext(task: Task): { text: string; suggestions: string[] } {
   if (task.feedbackFields && task.feedbackFields.length > 0) {
-    const f = task.feedbackFields[0];
+    const fields = task.feedbackFields;
+    if (fields.length === 1) {
+      const f = fields[0];
+      return {
+        text: `I coded **${f.label}** as **${f.aiValue}**, but you changed it to **${f.humanValue}**.\n\nTell me what I missed so I can handle similar ${task.vendor} invoices automatically going forward.`,
+        suggestions: [
+          `Always use ${f.humanValue} for ${task.vendor}`,
+          `Use ${f.aiValue} only for standard purchases`,
+          "Other",
+        ],
+      };
+    }
+    // Multiple fields changed — list them all, ask which to add a rule for
+    const fieldLines = fields.map((f) => `• **${f.label}**: ${f.aiValue} → ${f.humanValue}`).join("\n");
     return {
-      text: `I coded **${f.label}** as **${f.aiValue}**, but you changed it to **${f.humanValue}**.\n\nTell me what I missed so I can handle similar ${task.vendor} invoices automatically going forward.`,
+      text: `You changed ${fields.length} fields on this ${task.vendor} invoice:\n\n${fieldLines}\n\nWhich of these would you like me to add an instruction for?`,
       suggestions: [
-        `Always use ${f.humanValue} for ${task.vendor}`,
-        `Use ${f.aiValue} only for standard purchases`,
+        ...fields.slice(0, 2).map((f) => `Add rule for ${f.label}`),
         "Other",
       ],
     };
@@ -138,15 +150,40 @@ function FeedbackChatPanel({ task, onClose }: { task: Task; onClose: () => void 
     await aiType(1400);
 
     const lower = msg.toLowerCase();
+
     if (lower.includes("good") || lower.includes("correct") || lower.includes("one-off") || lower.includes("fine")) {
       await pushMsg({ role: "ai", text: "Noted — no changes needed. I'll keep handling this vendor the same way." });
-    } else {
-      await pushMsg({
-        role: "ai",
-        text: `Got it. Here's the rule I'll add to my instructions:\n\n"${msg}"\n\nThis will apply to future ${task.vendor} invoices. Type "yes" to confirm.`,
-      });
-      setPending(true);
+      return;
     }
+
+    if (lower === "other") {
+      await pushMsg({ role: "ai", text: `What instruction would you like me to add? Describe what you'd like me to do differently for ${task.vendor} invoices.` });
+      return;
+    }
+
+    // Handle "Add rule for [Field]" suggestions
+    if (lower.startsWith("add rule for ")) {
+      const fieldName = msg.slice("add rule for ".length).trim();
+      const field = task.feedbackFields?.find(
+        (f) => f.label.toLowerCase() === fieldName.toLowerCase()
+      );
+      if (field) {
+        const ruleText = `For ${task.vendor} invoices, always use ${field.humanValue} for ${field.label}`;
+        await pushMsg({
+          role: "ai",
+          text: `Got it. Here's the rule I'll add:\n\n"${ruleText}"\n\nType "yes" to confirm.`,
+        });
+        setPending(true);
+        return;
+      }
+    }
+
+    // Generic rule proposal
+    await pushMsg({
+      role: "ai",
+      text: `Got it. Here's the rule I'll add to my instructions:\n\n"${msg}"\n\nThis will apply to future ${task.vendor} invoices. Type "yes" to confirm.`,
+    });
+    setPending(true);
   };
 
   return (
