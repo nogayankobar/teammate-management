@@ -1,18 +1,5 @@
-export type TaskStatus = "needs_attention" | "in_progress" | "completed";
-export type TaskType =
-  | "bookkeeping"
-  | "validation"
-  | "approval"
-  | "routing"
-  | "anomaly"
-  | "extraction"
-  | "duplicate"
-  | "policy_violation"
-  | "fraud_signal"
-  | "receipt_audit"
-  | "spend_pattern";
-
-export type ActionType = "approve" | "reject" | "ask" | "fix" | "correct" | "stop";
+export type TaskStatus = "auto_approved" | "approved" | "pending_review" | "flagged";
+export type TaskType = "bookkeeping" | "validation" | "routing" | "anomaly" | "extraction";
 
 export interface DecisionStep {
   id: string;
@@ -22,9 +9,35 @@ export interface DecisionStep {
   tool?: string;
 }
 
+export interface FieldStats {
+  total: number;
+  confident: number;
+  escalated: number;
+}
+
+export interface LineItem {
+  description: string;
+  amount: number;
+  qty?: number;
+  unit?: string;
+  poRef?: string;
+}
+
+export interface FeedbackField {
+  label: string;
+  aiValue: string;
+  humanValue: string;
+}
+
+export interface LogEntry {
+  id: string;
+  action: "Fetch" | "Extract" | "Match" | "Classify" | "Validate" | "Flag" | "Ask" | "Escalate" | "Decide" | "Human";
+  detail: string;
+  reasoning: string;
+}
+
 export interface Task {
   id: string;
-  teammateId: string;
   status: TaskStatus;
   type: TaskType;
   vendor: string;
@@ -32,1009 +45,527 @@ export interface Task {
   amount: number;
   currency: string;
   date: string;
-  dueDate?: string;
+  processedAt: string;
+  processingDuration: string;
   summary: string;
+  lineItems?: LineItem[];
+  actionLabel: string;
+  fieldStats: FieldStats;
+  userOverride: "none" | "pending" | number;
   issue?: string;
-  suggestedAction?: string;
-  reasoning?: string;
-  contextUsed?: string[];
+  aiSummary?: string;
   codedTo?: string;
   assignedTo?: string;
-  submittedBy?: string;
-  category?: string;
-  steps?: DecisionStep[];
-  availableActions: ActionType[];
-  confidence?: number;
-  policyTriggered?: string;
+  feedbackFields?: FeedbackField[];
+  log: LogEntry[];
 }
-
-export const tasks: Task[] = [
-  // ══════════════════════════════════════════════════════════════════
-  // AP SPECIALIST TASKS
-  // ══════════════════════════════════════════════════════════════════
-
-  // ── NEEDS ATTENTION ──────────────────────────────────────────────
-  {
-    id: "task-001",
-    teammateId: "ap-specialist-01",
-    status: "needs_attention",
-    type: "anomaly",
-    vendor: "AWS",
-    invoiceNumber: "AWS-2024-08-9871",
-    amount: 24850,
-    currency: "USD",
-    date: "2024-07-30",
-    dueDate: "2024-08-14",
-    summary: "Invoice amount 38% higher than last month — escalation required",
-    issue:
-      "This AWS invoice is $24,850 — up 38% from last month's $17,980. This exceeds the 20% month-over-month anomaly threshold defined in your policies. Human review required before coding.",
-    suggestedAction:
-      "Review with the Engineering team to confirm whether this increase is expected (e.g., new infrastructure or spike). Once confirmed, approve to proceed with coding.",
-    reasoning:
-      "I compared this invoice to the trailing 3-month average ($16,400) and last month's charge ($17,980). The 38% increase exceeds the configured 20% MoM anomaly threshold. Per policy, invoices above this threshold require human escalation.",
-    contextUsed: [
-      "Anomaly policy: escalate if >20% MoM increase",
-      "AWS trailing 3-month average: $16,400",
-      "Last month AWS invoice: $17,980",
-      "Vendor memory: AWS — recurring infrastructure vendor",
-    ],
-    steps: [
-      {
-        id: "s1",
-        timestamp: "2024-07-30T09:12:00Z",
-        action: "Invoice received",
-        detail: "AWS invoice AWS-2024-08-9871 ingested from email.",
-      },
-      {
-        id: "s2",
-        timestamp: "2024-07-30T09:12:03Z",
-        action: "Extraction complete",
-        detail: "Extracted: vendor=AWS, amount=$24,850, invoice date=Jul 30.",
-        tool: "OCR + LLM extraction",
-      },
-      {
-        id: "s3",
-        timestamp: "2024-07-30T09:12:05Z",
-        action: "Anomaly detected",
-        detail:
-          "Amount $24,850 is 38% above last month ($17,980). Threshold is 20%. Flagging for escalation.",
-        tool: "Anomaly detection policy",
-      },
-      {
-        id: "s4",
-        timestamp: "2024-07-30T09:12:06Z",
-        action: "Escalated to human",
-        detail:
-          "Task escalated to AP team for review. Awaiting approval to proceed.",
-      },
-    ],
-    availableActions: ["approve", "reject", "ask"],
-    confidence: 92,
-    policyTriggered: "Escalate if >20% MoM increase",
-  },
-  {
-    id: "task-002",
-    teammateId: "ap-specialist-01",
-    status: "needs_attention",
-    type: "validation",
-    vendor: "Acme Software Ltd.",
-    invoiceNumber: "ACME-33291",
-    amount: 5400,
-    currency: "USD",
-    date: "2024-07-29",
-    dueDate: "2024-08-12",
-    summary: "Unknown vendor — no record in system, PO number missing",
-    issue:
-      "This invoice is from 'Acme Software Ltd.' — no matching vendor record was found in Tipalti. The PO number field is also blank. Cannot auto-approve or code without confirmation.",
-    suggestedAction:
-      "Confirm whether this is a new vendor to onboard, or a duplicate/fraudulent invoice. If legitimate, add the vendor in Tipalti and resubmit.",
-    reasoning:
-      "Vendor lookup returned no match for 'Acme Software Ltd.' in the payee database. PO matching also failed due to missing PO number. These two conditions together prevent automated processing.",
-    contextUsed: [
-      "Vendor lookup: no match found",
-      "PO matching: failed — PO number blank",
-      "Policy: new vendors require human approval",
-    ],
-    steps: [
-      {
-        id: "s1",
-        timestamp: "2024-07-29T14:20:00Z",
-        action: "Invoice received",
-        detail: "Invoice ACME-33291 received via Tipalti upload portal.",
-      },
-      {
-        id: "s2",
-        timestamp: "2024-07-29T14:20:04Z",
-        action: "Vendor lookup failed",
-        detail: "No vendor record found for 'Acme Software Ltd.'",
-        tool: "Vendor database lookup",
-      },
-      {
-        id: "s3",
-        timestamp: "2024-07-29T14:20:05Z",
-        action: "PO matching failed",
-        detail: "PO number field is blank — cannot match to purchase order.",
-        tool: "PO matching engine",
-      },
-      {
-        id: "s4",
-        timestamp: "2024-07-29T14:20:06Z",
-        action: "Escalated to human",
-        detail: "Both checks failed. Task escalated for human verification.",
-      },
-    ],
-    availableActions: ["approve", "reject", "ask", "fix"],
-    confidence: 78,
-  },
-  {
-    id: "task-003",
-    teammateId: "ap-specialist-01",
-    status: "needs_attention",
-    type: "routing",
-    vendor: "Figma",
-    invoiceNumber: "FIG-2024-4421",
-    amount: 3200,
-    currency: "USD",
-    date: "2024-07-30",
-    summary: "Routing conflict — policy ambiguity between two rules",
-    issue:
-      "Two routing policies apply to this Figma invoice and they conflict: (1) 'Software > $3,000 → VP Engineering' and (2) 'Design tools → VP Design'. Requesting clarification on which rule takes priority.",
-    suggestedAction:
-      "Approve routing to VP Design (more specific rule), or update the policy to resolve the conflict permanently.",
-    reasoning:
-      "Policy engine matched two rules simultaneously. Rule specificity scoring favors the 'Design tools' rule, but confidence is below the auto-apply threshold. Escalating to confirm intent.",
-    contextUsed: [
-      "Policy: Design tools → VP Design (Sarah Chen)",
-      "Policy: Software > $3,000 → VP Engineering (David Kim)",
-      "Vendor memory: Figma — design tool, recurring annual subscription",
-      "Previous Figma invoices: routed to VP Design",
-    ],
-    steps: [
-      {
-        id: "s1",
-        timestamp: "2024-07-30T11:05:00Z",
-        action: "Invoice received",
-        detail: "Figma annual subscription invoice ingested.",
-      },
-      {
-        id: "s2",
-        timestamp: "2024-07-30T11:05:03Z",
-        action: "Routing policy matched — conflict",
-        detail: "Two conflicting rules matched. Specificity score: Design tools (0.82) vs Software >$3k (0.79).",
-        tool: "Policy routing engine",
-      },
-      {
-        id: "s3",
-        timestamp: "2024-07-30T11:05:04Z",
-        action: "Escalated for clarification",
-        detail: "Confidence below threshold. Escalated to human to resolve routing conflict.",
-      },
-    ],
-    availableActions: ["approve", "reject", "ask", "fix"],
-    confidence: 68,
-    policyTriggered: "Conflict: Design tools vs Software >$3k",
-  },
-
-  // ── IN PROGRESS ──────────────────────────────────────────────────
-  {
-    id: "task-004",
-    teammateId: "ap-specialist-01",
-    status: "in_progress",
-    type: "extraction",
-    vendor: "Shopify",
-    invoiceNumber: "SHP-INV-7821",
-    amount: 1290,
-    currency: "USD",
-    date: "2024-07-30",
-    summary: "Extracting line items and matching to cost centers",
-    reasoning:
-      "Currently extracting 12 line items from the Shopify invoice and matching each to the appropriate cost center based on the product category coding rules.",
-    contextUsed: [
-      "Vendor memory: Shopify — SaaS, Commerce team",
-      "Cost center mapping: Commerce Platform → CC-4421",
-    ],
-    steps: [
-      {
-        id: "s1",
-        timestamp: "2024-07-30T13:00:00Z",
-        action: "Invoice received",
-        detail: "Shopify invoice SHP-INV-7821 received.",
-      },
-      {
-        id: "s2",
-        timestamp: "2024-07-30T13:00:05Z",
-        action: "Extracting line items",
-        detail: "Parsing 12 line items from invoice PDF...",
-        tool: "LLM extraction",
-      },
-    ],
-    availableActions: ["stop", "ask"],
-    confidence: 95,
-  },
-  {
-    id: "task-005",
-    teammateId: "ap-specialist-01",
-    status: "in_progress",
-    type: "validation",
-    vendor: "Stripe",
-    invoiceNumber: "IN-20240730-001",
-    amount: 847.5,
-    currency: "USD",
-    date: "2024-07-30",
-    summary: "Validating recurring charge against subscription agreement",
-    reasoning:
-      "Comparing this month's Stripe processing fee against the subscription agreement and prior month actuals to confirm it is within expected range.",
-    contextUsed: [
-      "Vendor memory: Stripe — payment processor, monthly variable fee",
-      "Last 3 months: $801, $823, $839",
-      "Contract: variable fee, no fixed cap",
-    ],
-    steps: [
-      {
-        id: "s1",
-        timestamp: "2024-07-30T12:30:00Z",
-        action: "Invoice received",
-        detail: "Stripe monthly statement received.",
-      },
-      {
-        id: "s2",
-        timestamp: "2024-07-30T12:30:04Z",
-        action: "Recurring validation in progress",
-        detail: "Comparing to prior 3-month average ($821). Current: $847.50 (+3.2%).",
-        tool: "Recurring charge validator",
-      },
-    ],
-    availableActions: ["stop", "ask"],
-    confidence: 97,
-  },
-
-  // ── COMPLETED ─────────────────────────────────────────────────────
-  {
-    id: "task-006",
-    teammateId: "ap-specialist-01",
-    status: "completed",
-    type: "bookkeeping",
-    vendor: "Google Cloud",
-    invoiceNumber: "GCP-2024-07-4432",
-    amount: 11200,
-    currency: "USD",
-    date: "2024-07-28",
-    summary: "Auto-approved and coded — matched PO, within normal range",
-    reasoning:
-      "Invoice matched open PO #GCP-PO-2024-03. Amount $11,200 is within 2% of the PO value ($11,000). Within the 15% MoM threshold. Auto-approved per policy and coded to Engineering Infrastructure (CC-1002).",
-    contextUsed: [
-      "PO match: GCP-PO-2024-03 ($11,000 — 98% match)",
-      "Anomaly check: +1.8% from last month — within 15% threshold",
-      "Auto-approval rule: PO-matched invoices <$15,000",
-      "Cost center: Engineering Infrastructure (CC-1002)",
-    ],
-    codedTo: "Engineering Infrastructure (CC-1002)",
-    steps: [
-      {
-        id: "s1",
-        timestamp: "2024-07-28T09:00:00Z",
-        action: "Invoice received",
-        detail: "GCP invoice ingested.",
-      },
-      {
-        id: "s2",
-        timestamp: "2024-07-28T09:00:04Z",
-        action: "PO matched",
-        detail: "Matched to PO #GCP-PO-2024-03. 98.2% value match.",
-        tool: "PO matching engine",
-      },
-      {
-        id: "s3",
-        timestamp: "2024-07-28T09:00:05Z",
-        action: "Anomaly check passed",
-        detail: "Amount within 15% MoM threshold (+1.8%).",
-        tool: "Anomaly detection",
-      },
-      {
-        id: "s4",
-        timestamp: "2024-07-28T09:00:06Z",
-        action: "Auto-approved",
-        detail: "All checks passed. Auto-approval rule applied.",
-        tool: "Approval engine",
-      },
-      {
-        id: "s5",
-        timestamp: "2024-07-28T09:00:07Z",
-        action: "Coded and submitted",
-        detail: "Coded to Engineering Infrastructure (CC-1002). Ready for payment.",
-      },
-    ],
-    availableActions: ["ask", "correct"],
-    confidence: 99,
-    policyTriggered: "Auto-approve: PO-matched invoices <$15k",
-  },
-  {
-    id: "task-007",
-    teammateId: "ap-specialist-01",
-    status: "completed",
-    type: "routing",
-    vendor: "Figma (Annual)",
-    invoiceNumber: "FIG-2024-3310",
-    amount: 3200,
-    currency: "USD",
-    date: "2024-07-27",
-    summary: "Routed to VP Design per 'Design tools' policy",
-    reasoning:
-      "Figma invoice matched the 'Design tools → VP Design' routing rule. Routed to Sarah Chen (VP Design) for approval. No conflicts detected.",
-    contextUsed: [
-      "Policy: Design tools → VP Design (Sarah Chen)",
-      "Vendor memory: Figma — design tool, annual subscription",
-    ],
-    codedTo: "Design & Brand (CC-2201)",
-    assignedTo: "Sarah Chen (VP Design)",
-    steps: [
-      {
-        id: "s1",
-        timestamp: "2024-07-27T10:00:00Z",
-        action: "Invoice received",
-        detail: "Figma annual invoice ingested.",
-      },
-      {
-        id: "s2",
-        timestamp: "2024-07-27T10:00:03Z",
-        action: "Routing policy matched",
-        detail: "Rule: 'Design tools → VP Design'. Confidence: 98%.",
-        tool: "Policy routing engine",
-      },
-      {
-        id: "s3",
-        timestamp: "2024-07-27T10:00:04Z",
-        action: "Routed to approver",
-        detail: "Sent to Sarah Chen (VP Design) for approval.",
-      },
-    ],
-    availableActions: ["ask", "correct"],
-    confidence: 98,
-    policyTriggered: "Design tools → VP Design",
-  },
-  {
-    id: "task-008",
-    teammateId: "ap-specialist-01",
-    status: "completed",
-    type: "bookkeeping",
-    vendor: "Zoom",
-    invoiceNumber: "ZM-2024-07-1182",
-    amount: 450,
-    currency: "USD",
-    date: "2024-07-26",
-    summary: "Auto-approved — recurring subscription, amount unchanged",
-    reasoning:
-      "Zoom monthly subscription $450 — identical to all prior months. Recurring vendor with stable charges. Auto-approved per recurring auto-approval rule.",
-    contextUsed: [
-      "Vendor memory: Zoom — video conferencing, monthly $450 (12 months consistent)",
-      "Auto-approval rule: recurring subscriptions with no amount change",
-    ],
-    codedTo: "G&A / Communications (CC-3301)",
-    steps: [
-      {
-        id: "s1",
-        timestamp: "2024-07-26T08:15:00Z",
-        action: "Invoice received",
-        detail: "Zoom monthly invoice ingested.",
-      },
-      {
-        id: "s2",
-        timestamp: "2024-07-26T08:15:03Z",
-        action: "Recurring check passed",
-        detail: "Amount $450 matches all prior 12 months exactly. No change.",
-        tool: "Recurring charge validator",
-      },
-      {
-        id: "s3",
-        timestamp: "2024-07-26T08:15:04Z",
-        action: "Auto-approved and coded",
-        detail: "Applied recurring auto-approval. Coded to G&A (CC-3301).",
-      },
-    ],
-    availableActions: ["ask", "correct"],
-    confidence: 100,
-    policyTriggered: "Auto-approve: recurring, no amount change",
-  },
-  {
-    id: "task-009",
-    teammateId: "ap-specialist-01",
-    status: "completed",
-    type: "bookkeeping",
-    vendor: "HubSpot",
-    invoiceNumber: "HS-88201-2024",
-    amount: 2100,
-    currency: "USD",
-    date: "2024-07-25",
-    summary: "Coded to Marketing — matched vendor policy and GL code",
-    reasoning:
-      "HubSpot invoice identified as CRM/marketing platform. Vendor memory indicates this always maps to Marketing budget (GL 6200). Coded accordingly.",
-    contextUsed: [
-      "Vendor memory: HubSpot — CRM / Marketing tool",
-      "GL code mapping: HubSpot → 6200 (Marketing Software)",
-      "No anomaly detected: +2.1% from last month",
-    ],
-    codedTo: "Marketing / CRM (GL-6200)",
-    steps: [
-      {
-        id: "s1",
-        timestamp: "2024-07-25T11:30:00Z",
-        action: "Invoice received",
-        detail: "HubSpot invoice ingested.",
-      },
-      {
-        id: "s2",
-        timestamp: "2024-07-25T11:30:04Z",
-        action: "Vendor matched",
-        detail: "HubSpot identified. Memory: CRM/Marketing tool → GL-6200.",
-        tool: "Vendor memory lookup",
-      },
-      {
-        id: "s3",
-        timestamp: "2024-07-25T11:30:05Z",
-        action: "Coded and submitted",
-        detail: "Coded to Marketing / CRM (GL-6200). Amount within normal range.",
-      },
-    ],
-    availableActions: ["ask", "correct"],
-    confidence: 97,
-  },
-
-  // ══════════════════════════════════════════════════════════════════
-  // EXPENSE AUDITOR TASKS
-  // ══════════════════════════════════════════════════════════════════
-
-  // ── NEEDS ATTENTION ──────────────────────────────────────────────
-  {
-    id: "ea-001",
-    teammateId: "expense-auditor-01",
-    status: "needs_attention",
-    type: "duplicate",
-    vendor: "Uber",
-    invoiceNumber: "EXP-2024-4812",
-    amount: 47.5,
-    currency: "USD",
-    date: "2024-07-30",
-    summary: "Duplicate Uber receipt — same trip submitted twice by John M.",
-    submittedBy: "John Martinez (Sales)",
-    category: "Travel & Transportation",
-    issue:
-      "Two expense claims contain the same Uber receipt ($47.50 on Jul 28, JFK → Manhattan). The receipt hash matches exactly. One was submitted on Jul 28, the other on Jul 30. This appears to be a duplicate submission.",
-    suggestedAction:
-      "Reject the duplicate claim (EXP-2024-4812) and keep the original (EXP-2024-4790). Notify the employee.",
-    reasoning:
-      "Receipt image hash comparison returned a 100% match between EXP-2024-4812 and EXP-2024-4790. Same merchant, amount, date, and pickup/dropoff locations. The second submission was made 2 days after the first — likely accidental resubmission.",
-    contextUsed: [
-      "Receipt hash matching: 100% match with EXP-2024-4790",
-      "Same merchant: Uber, same amount: $47.50, same date: Jul 28",
-      "Employee history: John Martinez — no prior duplicates",
-      "Policy: duplicate receipts require finance review",
-    ],
-    steps: [
-      {
-        id: "s1",
-        timestamp: "2024-07-30T10:15:00Z",
-        action: "Expense submitted",
-        detail: "John Martinez submitted expense EXP-2024-4812 ($47.50 Uber).",
-      },
-      {
-        id: "s2",
-        timestamp: "2024-07-30T10:15:02Z",
-        action: "Receipt scanned",
-        detail: "Extracted: Uber, $47.50, Jul 28, JFK → Manhattan.",
-        tool: "Receipt OCR",
-      },
-      {
-        id: "s3",
-        timestamp: "2024-07-30T10:15:04Z",
-        action: "Duplicate detected",
-        detail: "Receipt hash 100% match with EXP-2024-4790 (submitted Jul 28). Flagging as duplicate.",
-        tool: "Duplicate detection engine",
-      },
-      {
-        id: "s4",
-        timestamp: "2024-07-30T10:15:05Z",
-        action: "Escalated to finance",
-        detail: "Duplicate claim flagged for review. Recommended action: reject.",
-      },
-    ],
-    availableActions: ["reject", "approve", "ask"],
-    confidence: 99,
-    policyTriggered: "Duplicate receipt detection",
-  },
-
-  // ── IN PROGRESS ──────────────────────────────────────────────────
-  {
-    id: "ea-002",
-    teammateId: "expense-auditor-01",
-    status: "in_progress",
-    type: "receipt_audit",
-    vendor: "Various",
-    invoiceNumber: "RPT-2024-0891",
-    amount: 1842.3,
-    currency: "USD",
-    date: "2024-07-30",
-    summary: "Auditing expense report with 14 line items — Lisa Park (Marketing)",
-    submittedBy: "Lisa Park (Marketing)",
-    category: "Client Entertainment & Travel",
-    reasoning:
-      "Currently reviewing 14 line items in this expense report. Cross-checking each receipt against the T&E policy, verifying amounts, dates, and merchant categories. 9 of 14 items reviewed so far — no issues found yet.",
-    contextUsed: [
-      "Employee: Lisa Park — Marketing Manager, no prior violations",
-      "T&E policy: client entertainment limit $150/person, hotel limit $250/night",
-      "Report covers: Jul 22-26 client visit to NYC",
-    ],
-    steps: [
-      {
-        id: "s1",
-        timestamp: "2024-07-30T11:00:00Z",
-        action: "Report submitted",
-        detail: "Lisa Park submitted RPT-2024-0891 with 14 line items totaling $1,842.30.",
-      },
-      {
-        id: "s2",
-        timestamp: "2024-07-30T11:00:05Z",
-        action: "Audit in progress",
-        detail: "Reviewing each receipt against T&E policy. 9/14 items checked — all compliant so far.",
-        tool: "Policy compliance checker",
-      },
-    ],
-    availableActions: ["stop", "ask"],
-    confidence: 94,
-  },
-  {
-    id: "ea-003",
-    teammateId: "expense-auditor-01",
-    status: "in_progress",
-    type: "spend_pattern",
-    vendor: "Multiple vendors",
-    invoiceNumber: "BATCH-2024-W31",
-    amount: 12450,
-    currency: "USD",
-    date: "2024-07-30",
-    summary: "Running weekly spend pattern analysis across all departments",
-    submittedBy: "System (automated)",
-    category: "Spend Analysis",
-    reasoning:
-      "Analyzing week 31 expense submissions ($12,450 across 47 claims). Looking for anomalies: unusual spending spikes, category outliers, new merchant patterns, and weekend transactions.",
-    contextUsed: [
-      "Week 31 total: $12,450 across 47 claims (23 employees)",
-      "Prior 4-week average: $11,200/week",
-      "Focus areas: weekend spend, split transactions, high-frequency merchants",
-    ],
-    steps: [
-      {
-        id: "s1",
-        timestamp: "2024-07-30T06:00:00Z",
-        action: "Weekly analysis triggered",
-        detail: "Automated weekly spend pattern analysis started for W31.",
-      },
-      {
-        id: "s2",
-        timestamp: "2024-07-30T06:00:15Z",
-        action: "Data aggregation complete",
-        detail: "47 claims, 23 employees, $12,450 total. Running anomaly models...",
-        tool: "Spend pattern analyzer",
-      },
-    ],
-    availableActions: ["stop", "ask"],
-    confidence: 88,
-  },
-
-  // ── COMPLETED ─────────────────────────────────────────────────────
-  {
-    id: "ea-004",
-    teammateId: "expense-auditor-01",
-    status: "completed",
-    type: "policy_violation",
-    vendor: "The Capital Grille",
-    invoiceNumber: "EXP-2024-4801",
-    amount: 485,
-    currency: "USD",
-    date: "2024-07-29",
-    summary: "Policy violation — client dinner exceeded per-person limit",
-    submittedBy: "Mike Chen (Sales)",
-    category: "Client Entertainment",
-    reasoning:
-      "Mike Chen submitted a client dinner at The Capital Grille for $485. The receipt shows 2 guests, making the per-person cost $242.50. This exceeds the $150/person client entertainment limit. Flagged and sent back to employee with explanation.",
-    contextUsed: [
-      "T&E policy: client entertainment limit $150/person",
-      "Receipt: The Capital Grille, $485, 2 guests",
-      "Per-person cost: $242.50 (62% above limit)",
-      "Employee history: Mike Chen — 1 prior violation (Q1 2024)",
-    ],
-    codedTo: "Returned to employee",
-    steps: [
-      {
-        id: "s1",
-        timestamp: "2024-07-29T15:30:00Z",
-        action: "Expense submitted",
-        detail: "Mike Chen submitted EXP-2024-4801 ($485 The Capital Grille).",
-      },
-      {
-        id: "s2",
-        timestamp: "2024-07-29T15:30:03Z",
-        action: "Receipt analyzed",
-        detail: "Extracted: The Capital Grille, $485, 2 guests. Per-person: $242.50.",
-        tool: "Receipt OCR + guest detection",
-      },
-      {
-        id: "s3",
-        timestamp: "2024-07-29T15:30:05Z",
-        action: "Policy violation detected",
-        detail: "$242.50/person exceeds $150 limit by 62%. Prior violation on record.",
-        tool: "Policy compliance checker",
-      },
-      {
-        id: "s4",
-        timestamp: "2024-07-29T15:30:06Z",
-        action: "Returned to employee",
-        detail: "Expense returned with explanation: 'Per-person cost ($242.50) exceeds $150 limit. Please split or obtain manager approval.'",
-      },
-    ],
-    availableActions: ["ask", "correct"],
-    confidence: 97,
-    policyTriggered: "Client entertainment: $150/person limit",
-  },
-  {
-    id: "ea-005",
-    teammateId: "expense-auditor-01",
-    status: "completed",
-    type: "fraud_signal",
-    vendor: "Amazon",
-    invoiceNumber: "EXP-2024-4795",
-    amount: 289,
-    currency: "USD",
-    date: "2024-07-29",
-    summary: "Weekend purchase flagged — personal item suspected, cleared after review",
-    submittedBy: "Sarah Kim (Engineering)",
-    category: "Office Supplies",
-    reasoning:
-      "Sarah Kim submitted a $289 Amazon purchase made on Saturday (Jul 27). Items: 2x monitor stands + USB hub. Weekend purchase triggered a fraud signal. However, employee provided a note: 'Setting up home office per remote work policy.' Verified against remote work equipment policy — items qualify. Auto-cleared.",
-    contextUsed: [
-      "Fraud signal: weekend purchase on personal Amazon account",
-      "Items: 2x monitor stands ($119 ea), 1x USB hub ($51)",
-      "Remote work policy: up to $500 for home office equipment",
-      "Employee note: 'Setting up home office per remote work policy'",
-      "Employee history: Sarah Kim — no prior flags",
-    ],
-    codedTo: "Remote Work Equipment (GL-5510)",
-    steps: [
-      {
-        id: "s1",
-        timestamp: "2024-07-29T09:00:00Z",
-        action: "Expense submitted",
-        detail: "Sarah Kim submitted EXP-2024-4795 ($289 Amazon).",
-      },
-      {
-        id: "s2",
-        timestamp: "2024-07-29T09:00:03Z",
-        action: "Weekend purchase flagged",
-        detail: "Purchase made on Saturday Jul 27. Triggering fraud signal review.",
-        tool: "Fraud signal detector",
-      },
-      {
-        id: "s3",
-        timestamp: "2024-07-29T09:00:05Z",
-        action: "Employee note reviewed",
-        detail: "Note: 'Setting up home office per remote work policy.' Checking policy...",
-        tool: "Policy matcher",
-      },
-      {
-        id: "s4",
-        timestamp: "2024-07-29T09:00:07Z",
-        action: "Auto-cleared",
-        detail: "Items qualify under remote work equipment policy (up to $500). No further action needed.",
-      },
-    ],
-    availableActions: ["ask", "correct"],
-    confidence: 93,
-    policyTriggered: "Weekend purchase review → cleared via remote work policy",
-  },
-  {
-    id: "ea-006",
-    teammateId: "expense-auditor-01",
-    status: "completed",
-    type: "receipt_audit",
-    vendor: "Delta Airlines",
-    invoiceNumber: "EXP-2024-4788",
-    amount: 624,
-    currency: "USD",
-    date: "2024-07-28",
-    summary: "Flight expense approved — within policy, receipt verified",
-    submittedBy: "David Park (Product)",
-    category: "Travel — Airfare",
-    reasoning:
-      "David Park submitted a Delta Airlines round-trip SFO→JFK ($624). Economy class, booked 3 weeks in advance. Within the airfare policy ($800 max domestic round-trip). Receipt verified, booking confirmation matches. Auto-approved.",
-    contextUsed: [
-      "T&E policy: domestic round-trip airfare limit $800 (economy)",
-      "Booking: Delta, SFO→JFK, economy, booked Jul 7 for Jul 22",
-      "Receipt verified: booking confirmation matches claim",
-      "Employee: David Park — no violations",
-    ],
-    codedTo: "Travel — Airfare (GL-6100)",
-    steps: [
-      {
-        id: "s1",
-        timestamp: "2024-07-28T14:00:00Z",
-        action: "Expense submitted",
-        detail: "David Park submitted EXP-2024-4788 ($624 Delta Airlines).",
-      },
-      {
-        id: "s2",
-        timestamp: "2024-07-28T14:00:03Z",
-        action: "Receipt verified",
-        detail: "Booking confirmation matches: Delta, SFO→JFK, economy, $624.",
-        tool: "Receipt OCR + booking matcher",
-      },
-      {
-        id: "s3",
-        timestamp: "2024-07-28T14:00:05Z",
-        action: "Policy check passed",
-        detail: "$624 is within $800 domestic round-trip limit. Economy class confirmed.",
-        tool: "Policy compliance checker",
-      },
-      {
-        id: "s4",
-        timestamp: "2024-07-28T14:00:06Z",
-        action: "Auto-approved",
-        detail: "All checks passed. Coded to Travel — Airfare (GL-6100).",
-      },
-    ],
-    availableActions: ["ask", "correct"],
-    confidence: 99,
-    policyTriggered: "Auto-approve: airfare within policy, receipt verified",
-  },
-  {
-    id: "ea-007",
-    teammateId: "expense-auditor-01",
-    status: "completed",
-    type: "receipt_audit",
-    vendor: "Hilton Hotels",
-    invoiceNumber: "EXP-2024-4785",
-    amount: 738,
-    currency: "USD",
-    date: "2024-07-28",
-    summary: "Hotel stay approved — 3 nights within nightly limit",
-    submittedBy: "David Park (Product)",
-    category: "Travel — Lodging",
-    reasoning:
-      "David Park submitted 3 nights at Hilton NYC ($246/night = $738 total). The nightly rate is within the $250/night policy for NYC. Linked to the same trip as flight EXP-2024-4788. Auto-approved.",
-    contextUsed: [
-      "T&E policy: hotel limit $250/night for NYC metro area",
-      "Stay: Hilton NYC, Jul 22-25, 3 nights @ $246/night",
-      "Linked trip: same dates as flight EXP-2024-4788 (SFO→JFK)",
-    ],
-    codedTo: "Travel — Lodging (GL-6110)",
-    steps: [
-      {
-        id: "s1",
-        timestamp: "2024-07-28T14:05:00Z",
-        action: "Expense submitted",
-        detail: "David Park submitted EXP-2024-4785 ($738 Hilton Hotels).",
-      },
-      {
-        id: "s2",
-        timestamp: "2024-07-28T14:05:03Z",
-        action: "Receipt verified",
-        detail: "Hilton NYC, 3 nights, $246/night. Confirmation number verified.",
-        tool: "Receipt OCR",
-      },
-      {
-        id: "s3",
-        timestamp: "2024-07-28T14:05:05Z",
-        action: "Policy check passed",
-        detail: "$246/night within $250 NYC nightly limit. Trip linked to EXP-2024-4788.",
-        tool: "Policy compliance checker",
-      },
-      {
-        id: "s4",
-        timestamp: "2024-07-28T14:05:06Z",
-        action: "Auto-approved",
-        detail: "All checks passed. Coded to Travel — Lodging (GL-6110).",
-      },
-    ],
-    availableActions: ["ask", "correct"],
-    confidence: 98,
-    policyTriggered: "Auto-approve: hotel within nightly limit",
-  },
-  {
-    id: "ea-008",
-    teammateId: "expense-auditor-01",
-    status: "completed",
-    type: "validation",
-    vendor: "Starbucks",
-    invoiceNumber: "EXP-2024-4779",
-    amount: 12.4,
-    currency: "USD",
-    date: "2024-07-27",
-    summary: "Missing receipt — auto-approved under $25 threshold",
-    submittedBy: "Amy Wong (Design)",
-    category: "Meals",
-    reasoning:
-      "Amy Wong submitted $12.40 for Starbucks with no receipt attached. Per policy, expenses under $25 do not require a receipt. Auto-approved.",
-    contextUsed: [
-      "T&E policy: receipt not required for expenses under $25",
-      "Amount: $12.40 — below $25 threshold",
-      "Employee: Amy Wong — no violations",
-    ],
-    codedTo: "Meals & Snacks (GL-6300)",
-    steps: [
-      {
-        id: "s1",
-        timestamp: "2024-07-27T16:00:00Z",
-        action: "Expense submitted",
-        detail: "Amy Wong submitted EXP-2024-4779 ($12.40 Starbucks, no receipt).",
-      },
-      {
-        id: "s2",
-        timestamp: "2024-07-27T16:00:02Z",
-        action: "Missing receipt detected",
-        detail: "No receipt attached. Checking receipt-required threshold...",
-        tool: "Receipt validator",
-      },
-      {
-        id: "s3",
-        timestamp: "2024-07-27T16:00:03Z",
-        action: "Auto-approved",
-        detail: "$12.40 is below $25 no-receipt threshold. Auto-approved.",
-      },
-    ],
-    availableActions: ["ask", "correct"],
-    confidence: 100,
-    policyTriggered: "Auto-approve: no receipt required under $25",
-  },
-];
-
-export type TeammateStatus = "active" | "paused" | "dry_run" | "setup" | "inactive";
 
 export interface Teammate {
   id: string;
   name: string;
   domain: string;
+  job: string;
   avatar: string;
   avatarColor: string;
-  status: TeammateStatus;
-  model: string;
-  description: string;
-  automationRate: number;
-  accuracy: number;
-  timeSaved: string;
-  costSaved: string;
-  tasksToday: number;
-  tasksTotal: number;
-  alertCount: number;
-  tokensUsed: number;
-  tokenLimit: number;
+  status: "active" | "paused";
   lastActive: string;
-  capabilities: string[];
-  projectedImpact?: {
-    timeSaved: string;
-    costSaved: string;
-    highlight: string;
-    adoptionRate: string;
-  };
 }
 
-export const teammates: Teammate[] = [
+export interface InstructionVersion {
+  version: number;
+  content: string;
+  publishedAt: string;
+  publishedBy: string;
+  method: "manual" | "upload" | "chat";
+}
+
+export const teammate: Teammate = {
+  id: "ap-specialist-01",
+  name: "AP Specialist",
+  domain: "Accounts Payable",
+  job: "Invoice Processing",
+  avatar: "AP",
+  avatarColor: "#0052CC",
+  status: "active",
+  lastActive: "2 min ago",
+};
+
+export const instructionVersions: InstructionVersion[] = [
   {
-    id: "ap-specialist-01",
-    name: "AP Specialist",
-    domain: "Accounts Payable",
-    avatar: "AP",
-    avatarColor: "#0052CC",
-    status: "active",
-    model: "Claude Opus 4",
-    description:
-      "Extracts, codes, validates, and prepares invoices for payment. Matches invoices to POs and contracts.",
-    automationRate: 78,
-    accuracy: 96.4,
-    timeSaved: "14.2 hrs",
-    costSaved: "$2,840",
-    tasksToday: 12,
-    tasksTotal: 342,
-    alertCount: 3,
-    tokensUsed: 124000,
-    tokenLimit: 500000,
-    lastActive: "2 min ago",
-    capabilities: [
-      "Invoice extraction",
-      "GL coding",
-      "PO matching",
-      "Anomaly detection",
-      "Approval routing",
-    ],
+    version: 3,
+    content: `## Routing
+
+- Figma invoices → always route to VP Design (Sarah Chen)
+- Split AWS invoices by cost center using the tag in the description
+
+## Escalation thresholds
+
+- Escalate any invoice from a vendor with **no prior payment history** in Tipalti, regardless of amount
+- Escalate if invoice amount is more than **20% higher** than the same vendor's previous month
+
+## GL coding
+
+- Default cost center: use the department tag in the invoice description
+- If no tag is present, code to the vendor's historical cost center`,
+    publishedAt: "2026-07-22T10:30:00Z",
+    publishedBy: "Sarah Chen",
+    method: "manual",
   },
   {
-    id: "expense-auditor-01",
-    name: "Expense Auditor",
-    domain: "Expenses",
-    avatar: "EA",
-    avatarColor: "#00875A",
-    status: "active",
-    model: "Claude Opus 4",
-    description:
-      "Reviews submitted expenses for anomalies, fraud signals, duplicate claims, and policy violations. Surfaces only exceptions.",
-    automationRate: 91,
-    accuracy: 98.1,
-    timeSaved: "8.5 hrs",
-    costSaved: "$1,650",
-    tasksToday: 27,
-    tasksTotal: 1204,
-    alertCount: 1,
-    tokensUsed: 89000,
-    tokenLimit: 300000,
-    lastActive: "5 min ago",
-    capabilities: [
-      "Duplicate detection",
-      "Receipt matching",
-      "Policy compliance",
-      "Fraud signal detection",
-      "Spend pattern analysis",
-    ],
+    version: 2,
+    content: `## Routing
+
+- Figma invoices → always route to VP Design (Sarah Chen)
+
+## Escalation thresholds
+
+- Escalate any invoice from a vendor with no prior payment history in Tipalti, regardless of amount
+- Escalate if invoice amount is more than 20% higher than the same vendor's previous month`,
+    publishedAt: "2026-07-15T14:00:00Z",
+    publishedBy: "Noga Yankobar",
+    method: "chat",
   },
   {
-    id: "approval-coordinator-01",
-    name: "Approval Coordinator",
-    domain: "Accounts Payable",
-    avatar: "AC",
-    avatarColor: "#0065FF",
-    status: "paused",
-    model: "Claude Opus 4",
-    description:
-      "Routes invoices and payment requests through multi-level approval chains. Identifies bottlenecks, sends reminders, and escalates overdue approvals.",
-    automationRate: 82,
-    accuracy: 95.7,
-    timeSaved: "9.3 hrs",
-    costSaved: "$1,420",
-    tasksToday: 0,
-    tasksTotal: 256,
-    alertCount: 0,
-    tokensUsed: 67000,
-    tokenLimit: 250000,
-    lastActive: "2 days ago",
-    capabilities: [
-      "Multi-level routing",
-      "Approval chain optimization",
-      "Bottleneck detection",
-      "Escalation management",
-      "SLA monitoring",
-    ],
-  },
-  {
-    id: "invoice-collector-01",
-    name: "Invoice Collector",
-    domain: "Accounts Payable",
-    avatar: "IC",
-    avatarColor: "#5243AA",
-    status: "inactive",
-    model: "Claude Opus 4",
-    description:
-      "Collects invoices from email, vendor portals, and employees. Chases missing invoices and detects document types.",
-    automationRate: 85,
-    accuracy: 94.2,
-    timeSaved: "6.1 hrs",
-    costSaved: "$980",
-    tasksToday: 0,
-    tasksTotal: 178,
-    alertCount: 0,
-    tokensUsed: 42000,
-    tokenLimit: 200000,
-    lastActive: "3 hrs ago",
-    capabilities: [
-      "Email ingestion",
-      "Portal scraping",
-      "Document classification",
-      "Missing invoice detection",
-      "Multi-invoice splitting",
-    ],
-    projectedImpact: {
-      timeSaved: "~6 hrs/week",
-      costSaved: "~$980/month",
-      highlight: "Your team spends ~6 hours/week chasing invoices across email and vendor portals. Invoice Collector eliminates this entirely.",
-      adoptionRate: "Activated by 78% of companies like yours",
-    },
+    version: 1,
+    content: `## Escalation thresholds
+
+- Escalate any invoice from a vendor with no prior payment history in Tipalti
+- Escalate if invoice amount is more than 20% higher than the same vendor's previous month`,
+    publishedAt: "2026-06-20T09:00:00Z",
+    publishedBy: "Admin",
+    method: "upload",
   },
 ];
 
-// Legacy single teammate reference (for backward compat)
-export const teammate = teammates[0];
+export const tasks: Task[] = [
+  // ── FLAGGED ───────────────────────────────────────────────────────────────────
+  {
+    id: "task-001",
+    status: "flagged",
+    type: "anomaly",
+    vendor: "AWS",
+    invoiceNumber: "AWS-2024-08-9871",
+    amount: 24850,
+    currency: "USD",
+    date: "2026-06-28",
+    processedAt: "2026-06-28T14:23:00",
+    processingDuration: "2m 18s",
+    actionLabel: "Flagged for review",
+    fieldStats: { total: 19, confident: 18, escalated: 1 },
+    userOverride: "pending",
+    summary: "Invoice 38% higher than last month — escalated per instruction",
+    issue: "This AWS invoice is $24,850 — up 38% from last month's $17,980. Exceeds the 20% MoM threshold in your instructions.",
+    aiSummary: "I read the AWS invoice and extracted all three line items: EC2, S3, and CloudFront. Everything matched vendor history and coded cleanly to Engineering and Analytics. The only issue is the total — at $24,850 it's 38% higher than last month, which exceeds the 20% threshold in your instructions, so I stopped and flagged it for you.",
+    lineItems: [
+      { description: "EC2 Compute Services",        amount: 12400 },
+      { description: "S3 Data Storage & Transfer",  amount: 8200  },
+      { description: "CloudFront CDN Delivery",     amount: 4250  },
+    ],
+    log: [
+      { id: "l1",  action: "Fetch",    detail: "Payer profile",                          reasoning: "I pulled the payer profile. Noga Yankobar is the AP contact — auto-approve limit is $15,000 and the MoM spike threshold is set to 20%." },
+      { id: "l2",  action: "Fetch",    detail: "Vendor profile: AWS",                    reasoning: "AWS has been processing since 2021 with 24 prior invoices, all approved. Infrastructure provider on Net-30 terms. No flags in history." },
+      { id: "l3",  action: "Fetch",    detail: "Invoice history: AWS (last 3 months)",   reasoning: "I looked at the last 3 months: April $15,200, May $16,900, June $17,980. Consistent upward trend, trailing average $16,693." },
+      { id: "l4",  action: "Extract",  detail: "Invoice number → AWS-2024-08-9871",      reasoning: "Found in the document header, clearly labeled 'Invoice Number'." },
+      { id: "l5",  action: "Extract",  detail: "Vendor → Amazon Web Services",           reasoning: "I matched this to 'Amazon Web Services Inc.' in Tipalti — 99% similarity. Confident match." },
+      { id: "l6",  action: "Extract",  detail: "Invoice date → Jun 28, 2026",            reasoning: "Extracted from the document header." },
+      { id: "l7",  action: "Extract",  detail: "Currency → USD",                         reasoning: "Both the currency symbol and ISO code are present in the document. No ambiguity." },
+      { id: "l8",  action: "Extract",  detail: "Line 1 — EC2 Compute Services → $12,400.00",       reasoning: "Line 1 of 3. I extracted the amount from the line item row — description matches a known AWS service category." },
+      { id: "l9",  action: "Classify",     detail: "[EC2 Compute] Expense account → Expenses_Cloud_6040", reasoning: "EC2 maps to cloud infrastructure based on vendor memory. I've coded every prior AWS compute line this way." },
+      { id: "l10", action: "Classify",     detail: "[EC2 Compute] Department → Engineering",             reasoning: "Compute instances are owned by Engineering per the cost allocation policy." },
+      { id: "l11", action: "Classify",     detail: "[EC2 Compute] Cost center → CC-1002",               reasoning: "Engineering cost center — consistent with all prior EC2 lines." },
+      { id: "l12", action: "Extract",  detail: "Line 2 — S3 Data Storage & Transfer → $8,200.00",   reasoning: "Line 2 of 3. S3 storage service line." },
+      { id: "l13", action: "Classify",     detail: "[S3 Storage] Expense account → Expenses_Cloud_6040", reasoning: "S3 goes to the same cloud infrastructure account as other AWS services." },
+      { id: "l14", action: "Classify",     detail: "[S3 Storage] Department → Analytics",               reasoning: "Data storage is tagged to Analytics per the cost allocation policy." },
+      { id: "l15", action: "Classify",     detail: "[S3 Storage] Cost center → CC-1005",               reasoning: "Analytics cost center." },
+      { id: "l16", action: "Extract",  detail: "Line 3 — CloudFront CDN Delivery → $4,250.00",      reasoning: "Line 3 of 3. CDN delivery line." },
+      { id: "l17", action: "Classify",     detail: "[CloudFront] Expense account → Expenses_Cloud_6040", reasoning: "CDN delivery maps to cloud infrastructure — same as prior CloudFront lines." },
+      { id: "l18", action: "Classify",     detail: "[CloudFront] Department → Engineering",             reasoning: "CDN is managed by the infrastructure sub-team within Engineering." },
+      { id: "l19", action: "Classify",     detail: "[CloudFront] Cost center → CC-1002",               reasoning: "Engineering cost center." },
+      { id: "l20", action: "Classify",     detail: "AP account → AP_Engineering_2000",                  reasoning: "Engineering payables account applies to the full invoice." },
+      { id: "l21", action: "Validate", detail: "MoM threshold: +38.2% vs 20% limit",               reasoning: "This invoice is $24,850 — up 38.2% from last month's $17,980. The threshold in the instructions is 20%. This fails." },
+      { id: "l22", action: "Flag",     detail: "Anomaly: MoM spike exceeds threshold",              reasoning: "The spike is nearly double the allowed threshold. I'm flagging this for human review — I can't auto-approve it per the payer's instructions." },
+      { id: "l23", action: "Decide",   detail: "Decided: flagged for review",                        reasoning: "All 3 lines are coded and I'm confident in the GL mapping. I'm only pausing because of the MoM spike — everything else checks out." },
+    ],
+  },
+  {
+    id: "task-002",
+    status: "flagged",
+    type: "validation",
+    vendor: "Acme Software Ltd.",
+    invoiceNumber: "ACME-33291",
+    amount: 5400,
+    currency: "USD",
+    date: "2026-06-27",
+    processedAt: "2026-06-27T11:47:00",
+    processingDuration: "58s",
+    actionLabel: "Flagged for review",
+    fieldStats: { total: 10, confident: 4, escalated: 2 },
+    userOverride: "pending",
+    summary: "No vendor record in Tipalti, PO number missing",
+    issue: "Vendor 'Acme Software Ltd.' not found in Tipalti. PO number is blank. Cannot process without confirmation.",
+    aiSummary: "I received an invoice from Acme Software Ltd. for $5,400. When I searched the Tipalti vendor database, I found no matching record — this appears to be a new vendor. The PO number field was also blank. Both checks are required before I can process a first-time payment, so I stopped and flagged this for you.",
+    log: [
+      { id: "l1",  action: "Fetch",    detail: "Payer profile",                          reasoning: "Tipalti Inc. — AP contact Noga Yankobar. New vendor policy: requires human sign-off before first payment." },
+      { id: "l2",  action: "Match",    detail: "Vendor lookup: Acme Software Ltd.",       reasoning: "Searched Tipalti vendor database. No matching record found (similarity threshold 80%). Zero payment history." },
+      { id: "l3",  action: "Extract",  detail: "Invoice number → ACME-33291",             reasoning: "Found in document header, clearly labeled." },
+      { id: "l4",  action: "Extract",  detail: "Vendor → Acme Software Ltd.",             reasoning: "Name extracted from document. Attempted fuzzy match — no result in vendor database." },
+      { id: "l5",  action: "Extract",  detail: "Amount → $5,400.00",                      reasoning: "Found in 'Total Due' field. Single line item invoice." },
+      { id: "l6",  action: "Extract",  detail: "Date → Jul 29, 2024",                     reasoning: "Extracted from document header." },
+      { id: "l7",  action: "Extract",  detail: "PO number → (blank)",                     reasoning: "PO number field is empty in the invoice. No PO reference anywhere in the document." },
+      { id: "l8",  action: "Extract",  detail: "Currency → USD",                          reasoning: "Currency symbol present." },
+      { id: "l9",  action: "Validate", detail: "New vendor policy check",                 reasoning: "Vendor 'Acme Software Ltd.' returned zero matches in Tipalti. Payer policy: new vendors require human approval before first payment." },
+      { id: "l10", action: "Validate", detail: "PO check: PO number field empty",         reasoning: "No PO number in the invoice. Cannot match to an approved purchase order. Standard AP policy requires PO or manual override." },
+      { id: "l11", action: "Flag",     detail: "2 checks failed: new vendor + missing PO", reasoning: "New vendor not in Tipalti AND PO number absent. Cannot auto-process. Human verification required." },
+      { id: "l12", action: "Decide",   detail: "Decided: flagged for review",              reasoning: "Two validation checks failed. Human verification required before processing." },
+    ],
+  },
+  {
+    id: "task-003",
+    status: "approved",
+    type: "routing",
+    vendor: "Figma",
+    invoiceNumber: "FIG-2024-4421",
+    amount: 3200,
+    currency: "USD",
+    date: "2026-06-27",
+    processedAt: "2026-06-27T09:15:00",
+    processingDuration: "1m 12s",
+    actionLabel: "Routed to VP Design",
+    fieldStats: { total: 10, confident: 10, escalated: 0 },
+    userOverride: "none",
+    summary: "Routing conflict resolved — routed to VP Design after human clarification",
+    aiSummary: "I read the Figma annual subscription invoice for $3,200. All fields coded cleanly from vendor history. I hit a routing conflict — two instructions both matched (design tools rule vs. software over $3,000 rule) and the confidence scores were too close to auto-resolve. I asked for clarification and routed to Sarah Chen after you confirmed the design rule takes priority.",
+    log: [
+      { id: "l1",   action: "Fetch",    detail: "Payer profile",                            reasoning: "Tipalti Inc. — AP contact Noga Yankobar." },
+      { id: "l2",   action: "Fetch",    detail: "Vendor profile: Figma",                    reasoning: "Established vendor since 2023. 8 prior invoices. Design tool, annual subscription. All prior invoices routed to VP Design." },
+      { id: "l3",   action: "Fetch",    detail: "Invoice history: Figma (last 12 months)",   reasoning: "Jul 2023: $3,200 / Jan 2024: $3,200 — consistent annual billing. Amount unchanged." },
+      { id: "l4",   action: "Extract",  detail: "Invoice number → FIG-2024-4421",            reasoning: "Found in document header." },
+      { id: "l5",   action: "Extract",  detail: "Vendor → Figma",                            reasoning: "Matched to Tipalti vendor 'Figma Inc.' (similarity 100%)." },
+      { id: "l6",   action: "Extract",  detail: "Amount → $3,200.00",                        reasoning: "Found in 'Total Due' field. Matches prior annual invoices exactly." },
+      { id: "l7",   action: "Extract",  detail: "Category → Design software / SaaS",         reasoning: "Derived from vendor profile and line item description 'Annual Design Subscription'." },
+      { id: "l8",   action: "Extract",  detail: "Date → Jul 30, 2024",                       reasoning: "Extracted from document header." },
+      { id: "l9",   action: "Classify",     detail: "Expense account → Expenses_Design_6088",    reasoning: "Vendor category 'Design software' maps to design expense account per vendor memory. Consistent with all 8 prior invoices." },
+      { id: "l10",  action: "Classify",     detail: "AP account → AP_Design_2001",               reasoning: "Design payables account per company chart of accounts." },
+      { id: "l10b", action: "Classify",     detail: "Department → Design",                       reasoning: "Based on vendor category (design tool)." },
+      { id: "l10c", action: "Classify",     detail: "Location → San Mateo HQ",                   reasoning: "Design team based at HQ." },
+      { id: "l11",  action: "Match",    detail: "Routing rules: 2 instructions matched",     reasoning: "Instruction 1: 'Design tools → VP Design (Sarah Chen)' — confidence 0.82. Instruction 2: 'Software > $3,000 → VP Engineering (David Kim)' — confidence 0.79." },
+      { id: "l12",  action: "Flag",     detail: "Routing conflict — 2 instructions match",   reasoning: "Both instructions apply. Confidence scores are close (0.82 vs 0.79). Prior history favors VP Design but gap is insufficient to auto-resolve." },
+      { id: "l13",  action: "Ask",      detail: "Routing conflict: which instruction takes priority for Figma ($3,200)?",  reasoning: "Confidence gap between matched instructions is too small to auto-resolve (0.82 vs 0.79). Asking AP contact to confirm routing." },
+      { id: "l14",  action: "Human",    detail: "Design tools always take priority over the software threshold rule.",      reasoning: "" },
+      { id: "l15",  action: "Decide",   detail: "Routed to Sarah Chen (VP Design)",          reasoning: "Human confirmed design tool rule takes priority. Routing updated. Instruction priority recorded for future Figma invoices." },
+    ],
+  },
+
+  // ── PENDING REVIEW ────────────────────────────────────────────────────────────
+  {
+    id: "task-007",
+    status: "pending_review",
+    type: "routing",
+    vendor: "Figma (Annual)",
+    invoiceNumber: "FIG-2024-3310",
+    amount: 3200,
+    currency: "USD",
+    date: "2026-06-26",
+    processedAt: "2026-06-26T16:02:00",
+    processingDuration: "45s",
+    actionLabel: "Pending review",
+    fieldStats: { total: 10, confident: 10, escalated: 0 },
+    userOverride: "pending",
+    summary: "Routed to VP Design per instruction — awaiting approval",
+    codedTo: "Expenses_Design_6088 / Design",
+    assignedTo: "Sarah Chen (VP Design)",
+    aiSummary: "I read the Figma annual subscription invoice for $3,200. Amount matches last year exactly and all fields coded from vendor history with full confidence. I matched the routing instruction and sent it to Sarah Chen (VP Design) for approval. Waiting on her sign-off.",
+    log: [
+      { id: "l1",  action: "Fetch",    detail: "Payer profile",                          reasoning: "Tipalti Inc. — AP contact Noga Yankobar." },
+      { id: "l2",  action: "Fetch",    detail: "Vendor profile: Figma",                  reasoning: "Established vendor since 2023. 7 prior invoices. Annual design tool subscription. All prior invoices approved." },
+      { id: "l3",  action: "Fetch",    detail: "Invoice history: Figma (last year)",      reasoning: "Jul 2023: $3,200. Same amount, same vendor, annual billing cycle confirmed." },
+      { id: "l4",  action: "Extract",  detail: "Invoice number → FIG-2024-3310",          reasoning: "Found in document header." },
+      { id: "l5",  action: "Extract",  detail: "Vendor → Figma",                          reasoning: "Matched to Tipalti vendor 'Figma Inc.' (similarity 100%)." },
+      { id: "l6",  action: "Extract",  detail: "Amount → $3,200.00",                      reasoning: "Found in 'Total Due' field. Matches prior year invoice exactly." },
+      { id: "l7",  action: "Extract",  detail: "Date → Jul 27, 2024",                     reasoning: "Extracted from document header." },
+      { id: "l8",  action: "Classify",     detail: "Expense account → Expenses_Design_6088",  reasoning: "Vendor 'Figma' maps to design expense account per vendor memory. Consistent with all prior invoices." },
+      { id: "l8b", action: "Classify",     detail: "AP account → AP_Design_2001",             reasoning: "Design payables account per chart of accounts." },
+      { id: "l9",  action: "Classify",     detail: "Department → Design",                     reasoning: "Based on vendor category (design tool)." },
+      { id: "l9b", action: "Classify",     detail: "Location → San Mateo HQ",                 reasoning: "Design team based at HQ." },
+      { id: "l10", action: "Match",    detail: "Routing instruction matched: VP Design",  reasoning: "Rule: 'Figma invoices → always route to VP Design (Sarah Chen)' — confidence 100%. No conflicting instructions." },
+      { id: "l11", action: "Decide",   detail: "Decided: routed to Sarah Chen (VP Design)", reasoning: "Bill coding complete. Invoice routed per instruction. Awaiting Sarah Chen's approval." },
+    ],
+  },
+
+  // ── AUTO-APPROVED ─────────────────────────────────────────────────────────────
+  {
+    id: "task-006",
+    status: "auto_approved",
+    type: "bookkeeping",
+    vendor: "Google Cloud",
+    invoiceNumber: "GCP-2024-07-4432",
+    amount: 11200,
+    currency: "USD",
+    date: "2026-06-25",
+    processedAt: "2026-06-25T10:33:00",
+    processingDuration: "1m 55s",
+    actionLabel: "Auto-approved",
+    fieldStats: { total: 10, confident: 10, escalated: 0 },
+    userOverride: "none",
+    summary: "PO matched, within normal range — coded to Engineering Infrastructure",
+    codedTo: "Expenses_Cloud_6040 / Engineering",
+    aiSummary: "I read the Google Cloud invoice and extracted all three line items: Compute Engine, BigQuery, and Cloud Storage. Everything coded cleanly against vendor history. The total is up 1.8% from last month — well within the 20% threshold and below the $15,000 auto-approve limit. Auto-approved.",
+    lineItems: [
+      { description: "Compute Engine Instances",  amount: 6200 },
+      { description: "BigQuery Data Analytics",   amount: 3100 },
+      { description: "Cloud Storage & Egress",    amount: 1900 },
+    ],
+    log: [
+      { id: "l1",  action: "Fetch",    detail: "Payer profile",                                  reasoning: "Tipalti Inc. — AP contact Noga Yankobar. Auto-approve limit: $15,000." },
+      { id: "l2",  action: "Fetch",    detail: "Vendor profile: Google Cloud",                   reasoning: "Established vendor since 2022. 15 prior invoices, all approved. Net-30 payment terms. No flags." },
+      { id: "l3",  action: "Fetch",    detail: "Invoice history: Google Cloud (last 3 months)",  reasoning: "May: $10,980 / Jun: $11,010 — trailing average $10,995. MoM trend: stable." },
+      { id: "l4",  action: "Extract",  detail: "Invoice number → GCP-2024-07-4432",              reasoning: "Found in document header, labeled 'Invoice #'." },
+      { id: "l5",  action: "Extract",  detail: "Vendor → Google Cloud",                          reasoning: "Matched to Tipalti vendor 'Google Cloud Platform Inc.' (similarity 97%)." },
+      { id: "l6",  action: "Extract",  detail: "Invoice date → Jul 28, 2024",                    reasoning: "Extracted from document header." },
+      { id: "l7",  action: "Extract",  detail: "Currency → USD",                                 reasoning: "Currency symbol and ISO code both present." },
+      { id: "l8",  action: "Match",    detail: "PO match: GCP-PO-2024-03",                       reasoning: "Open PO found for Google Cloud. PO value $11,000. Invoice is 98.2% of PO — within 5% tolerance." },
+      { id: "l9",  action: "Extract",  detail: "Line 1 — Compute Engine Instances → $6,200.00",  reasoning: "Line 1 of 3. Compute instances — mapped to Engineering team." },
+      { id: "l10", action: "Classify",     detail: "[Compute] Expense account → Expenses_Cloud_6040", reasoning: "Compute maps to cloud infrastructure expense account per vendor memory." },
+      { id: "l11", action: "Classify",     detail: "[Compute] Department → Engineering",              reasoning: "Compute instances are owned by Engineering per cost allocation policy." },
+      { id: "l12", action: "Classify",     detail: "[Compute] Cost center → CC-1002",                reasoning: "Engineering cost center." },
+      { id: "l13", action: "Classify",     detail: "[Compute] Project → Infra - FY2024",             reasoning: "Open project code for FY2024 infrastructure spend." },
+      { id: "l14", action: "Extract",  detail: "Line 2 — BigQuery Data Analytics → $3,100.00",   reasoning: "Line 2 of 3. Analytics query and processing service." },
+      { id: "l15", action: "Classify",     detail: "[BigQuery] Expense account → Expenses_Cloud_6040", reasoning: "BigQuery is a cloud service — same expense account as other GCP services." },
+      { id: "l16", action: "Classify",     detail: "[BigQuery] Department → Analytics",              reasoning: "BigQuery is owned by the Analytics team per cost tagging." },
+      { id: "l17", action: "Classify",     detail: "[BigQuery] Cost center → CC-1005",               reasoning: "Analytics cost center." },
+      { id: "l18", action: "Extract",  detail: "Line 3 — Cloud Storage & Egress → $1,900.00",    reasoning: "Line 3 of 3. Storage and data transfer costs." },
+      { id: "l19", action: "Classify",     detail: "[Storage] Expense account → Expenses_Cloud_6040", reasoning: "Storage maps to cloud infrastructure account." },
+      { id: "l20", action: "Classify",     detail: "[Storage] Department → Engineering",             reasoning: "Storage is managed by Engineering infrastructure team." },
+      { id: "l21", action: "Classify",     detail: "[Storage] Cost center → CC-1002",               reasoning: "Engineering cost center." },
+      { id: "l22", action: "Classify",     detail: "AP account → AP_Engineering_2000",               reasoning: "Engineering payables account applies to the full invoice." },
+      { id: "l23", action: "Validate", detail: "MoM threshold: +1.8% (within 20% limit)",        reasoning: "Invoice total $11,200 vs prior month $11,010 = +1.8%. Well within 20% threshold. Check passed." },
+      { id: "l24", action: "Decide",   detail: "Decided: auto-approved",                         reasoning: "All 3 lines coded. PO matched at 98.2%, MoM within threshold, vendor established, amount below $15k limit." },
+    ],
+  },
+  {
+    id: "task-008",
+    status: "auto_approved",
+    type: "bookkeeping",
+    vendor: "Zoom",
+    invoiceNumber: "ZM-2024-07-1182",
+    amount: 450,
+    currency: "USD",
+    date: "2026-06-25",
+    processedAt: "2026-06-25T08:51:00",
+    processingDuration: "22s",
+    actionLabel: "Auto-approved",
+    fieldStats: { total: 8, confident: 8, escalated: 0 },
+    userOverride: "none",
+    summary: "Recurring subscription, amount unchanged — auto-approved",
+    codedTo: "Expenses_Comms_6330 / G&A",
+    aiSummary: "I read the Zoom monthly subscription invoice for $450. Amount matches all 12 prior months exactly — confirmed recurring fixed-price subscription. Vendor established, amount well below the auto-approve limit. Coded to G&A communications account per vendor memory. Auto-approved.",
+    log: [
+      { id: "l1",  action: "Fetch",    detail: "Payer profile",                               reasoning: "Tipalti Inc. — AP contact Noga Yankobar." },
+      { id: "l2",  action: "Fetch",    detail: "Vendor profile: Zoom",                        reasoning: "Established vendor since 2022. 12 prior monthly invoices, all approved. Monthly communications subscription. Net-0 (auto-pay)." },
+      { id: "l3",  action: "Fetch",    detail: "Invoice history: Zoom (last 12 months)",       reasoning: "$450.00 every month without variation. Confirmed recurring subscription at fixed price." },
+      { id: "l4",  action: "Extract",  detail: "Invoice number → ZM-2024-07-1182",             reasoning: "Found in document header." },
+      { id: "l5",  action: "Extract",  detail: "Vendor → Zoom",                                reasoning: "Matched to Tipalti vendor 'Zoom Video Communications Inc.' (similarity 99%)." },
+      { id: "l6",  action: "Extract",  detail: "Amount → $450.00",                             reasoning: "Found in 'Total Due' field. Matches all 12 prior months exactly — no change." },
+      { id: "l7",  action: "Extract",  detail: "Date → Jul 26, 2024",                          reasoning: "Extracted from document header." },
+      { id: "l8",  action: "Classify",     detail: "Expense account → Expenses_Comms_6330",        reasoning: "Zoom maps to communications expense account per vendor memory. Consistent with all prior invoices." },
+      { id: "l8b", action: "Classify",     detail: "AP account → AP_GA_3000",                      reasoning: "G&A payables account per chart of accounts." },
+      { id: "l9",  action: "Classify",     detail: "Department → G&A",                             reasoning: "Based on vendor category (communications / SaaS)." },
+      { id: "l9b", action: "Classify",     detail: "Location → All Offices",                        reasoning: "Communications tools allocated across all office locations." },
+      { id: "l10", action: "Validate", detail: "Recurring subscription check: amount unchanged", reasoning: "$450.00 exactly — matches all 12 prior months. Recurring subscription confirmed at fixed price. MoM delta: 0%." },
+      { id: "l11", action: "Decide",   detail: "Decided: auto-approved",                        reasoning: "Recurring subscription confirmed — $450/month, 12 consecutive months, amount unchanged. Vendor established. Auto-approved." },
+    ],
+  },
+  {
+    id: "task-009",
+    status: "auto_approved",
+    type: "bookkeeping",
+    vendor: "HubSpot",
+    invoiceNumber: "HS-88201-2024",
+    amount: 2100,
+    currency: "USD",
+    date: "2026-06-23",
+    processedAt: "2026-06-23T13:20:00",
+    processingDuration: "38s",
+    actionLabel: "Auto-approved",
+    fieldStats: { total: 9, confident: 9, escalated: 0 },
+    userOverride: 1,
+    summary: "Matched vendor memory, GL mapping — coded to Marketing",
+    codedTo: "Expenses_Mktg_6200 / Marketing",
+    aiSummary: "I read the HubSpot invoice and matched it to prior history. Amount is up 2.1% from last month — well within the 20% threshold. Most fields coded from memory with full confidence. I wasn't certain about the project code — there are multiple open Q3 projects and I don't have a clear rule for which one HubSpot fees belong to. I flagged that field for you.",
+    feedbackFields: [
+      { label: "Project", aiValue: "Growth Q3 2024", humanValue: "Brand Awareness FY2024" },
+    ],
+    log: [
+      { id: "l1",  action: "Fetch",    detail: "Payer profile",                             reasoning: "Tipalti Inc. — AP contact Noga Yankobar." },
+      { id: "l2",  action: "Fetch",    detail: "Vendor profile: HubSpot",                   reasoning: "Established vendor since 2023. 5 prior invoices. CRM/marketing platform. Net-30 payment terms. All approved." },
+      { id: "l3",  action: "Fetch",    detail: "Invoice history: HubSpot (last 3 months)",  reasoning: "Apr: $2,060 / May: $2,080 / Jun: $2,100 — gradual increase, within normal range." },
+      { id: "l4",  action: "Extract",  detail: "Invoice number → HS-88201-2024",             reasoning: "Found in document header." },
+      { id: "l5",  action: "Extract",  detail: "Vendor → HubSpot",                           reasoning: "Matched to Tipalti vendor 'HubSpot Inc.' (similarity 100%)." },
+      { id: "l6",  action: "Extract",  detail: "Amount → $2,100.00",                         reasoning: "Found in 'Total Due' field." },
+      { id: "l7",  action: "Extract",  detail: "Date → Jul 25, 2024",                        reasoning: "Extracted from document header." },
+      { id: "l8",  action: "Classify",     detail: "Expense account → Expenses_Mktg_6200",       reasoning: "HubSpot maps to marketing expense account per vendor memory. Consistent with all 5 prior invoices." },
+      { id: "l8b", action: "Classify",     detail: "AP account → AP_Marketing_110358",           reasoning: "Marketing payables account per chart of accounts." },
+      { id: "l9",  action: "Classify",     detail: "Department → Marketing",                     reasoning: "Based on vendor category (CRM/marketing platform)." },
+      { id: "l9b", action: "Classify",     detail: "Project → Growth Q3 2024",                   reasoning: "Open Q3 project code for marketing tooling spend. Not fully confident — HubSpot spend could belong to more than one active project this cycle." },
+      { id: "l9bf", action: "Flag",        detail: "Project raised for review",                   reasoning: "I used Growth Q3 2024 as the project code but I'm not certain — there are multiple open Q3 projects and I don't have a clear rule for which one HubSpot fees belong to. Please confirm before this posts." },
+      { id: "l9c", action: "Classify",     detail: "Location → New York Office",                  reasoning: "Marketing team primarily based in New York office." },
+      { id: "l10", action: "Validate", detail: "MoM threshold: +2.1% (within 20% limit)",    reasoning: "Current: $2,100 vs prior month $2,080 = +2.1%. Well within 20% threshold. Check passed." },
+      { id: "l11", action: "Decide",   detail: "Decided: auto-approved",                     reasoning: "Vendor established. Amount +2.1% from last month — within threshold. Bill coding resolved via vendor memory." },
+    ],
+  },
+
+  // ── APPROVED (human reviewed, no changes) ────────────────────────────────────
+  {
+    id: "task-010",
+    status: "approved",
+    type: "bookkeeping",
+    vendor: "Salesforce",
+    invoiceNumber: "SF-2024-07-00441",
+    amount: 8750,
+    currency: "USD",
+    date: "2026-06-23",
+    processedAt: "2026-06-23T15:44:00",
+    processingDuration: "52s",
+    actionLabel: "Approved",
+    fieldStats: { total: 9, confident: 9, escalated: 0 },
+    userOverride: "none",
+    summary: "Annual license renewal — reviewed and approved with no changes",
+    codedTo: "Expenses_Sales_6100 / Sales",
+    aiSummary: "I read the Salesforce annual license renewal for $8,750. Amount is up 4.2% year-over-year, consistent with prior renewal increases. All nine fields coded from vendor history with full confidence. Reviewed and approved with no changes.",
+    log: [
+      { id: "l1",  action: "Fetch",    detail: "Payer profile",                                reasoning: "Tipalti Inc. — AP contact Noga Yankobar. Auto-approve limit: $15,000." },
+      { id: "l2",  action: "Fetch",    detail: "Vendor profile: Salesforce",                   reasoning: "Established vendor since 2021. 8 prior invoices. Annual CRM license. All approved. Net-30 terms." },
+      { id: "l3",  action: "Fetch",    detail: "Invoice history: Salesforce (last 12 months)", reasoning: "Jul 2023: $8,400. Current: $8,750 = +4.2% YoY. Within expected renewal increase range." },
+      { id: "l4",  action: "Extract",  detail: "Invoice number → SF-2024-07-00441",             reasoning: "Found in document header. Salesforce format confirmed." },
+      { id: "l5",  action: "Extract",  detail: "Vendor → Salesforce",                           reasoning: "Matched to Tipalti vendor 'Salesforce.com Inc.' (similarity 100%)." },
+      { id: "l6",  action: "Extract",  detail: "Amount → $8,750.00",                            reasoning: "Found in 'Total Due' field. Annual license for 25 seats." },
+      { id: "l7",  action: "Extract",  detail: "Date → Jul 24, 2024",                           reasoning: "Extracted from document header." },
+      { id: "l8",  action: "Classify",     detail: "Expense account → Expenses_Sales_6100",         reasoning: "Salesforce maps to sales expense account per vendor memory. Consistent with all prior invoices." },
+      { id: "l8b", action: "Classify",     detail: "AP account → AP_Sales_2002",                    reasoning: "Sales payables account per chart of accounts." },
+      { id: "l9",  action: "Classify",     detail: "Department → Sales",                            reasoning: "Based on vendor category (CRM / sales platform)." },
+      { id: "l9b", action: "Classify",     detail: "Cost center → CC-4100",                         reasoning: "Sales cost center per department mapping." },
+      { id: "l9c", action: "Classify",     detail: "Location → New York Office",                    reasoning: "Sales team primarily based in New York office." },
+      { id: "l10", action: "Validate", detail: "Annual renewal check: +4.2% YoY (within range)", reasoning: "$8,750 vs last year $8,400 = +4.2%. Consistent with typical SaaS renewal increases (3-5%). Check passed." },
+      { id: "l11", action: "Decide",   detail: "Decided: routed for human review",              reasoning: "Annual renewal invoice above $8k review threshold. Routed to Noga Yankobar — approved with no changes." },
+    ],
+  },
+
+  // ── APPROVED WITH MULTIPLE OVERRIDES ─────────────────────────────────────────
+  {
+    id: "task-012",
+    status: "approved",
+    type: "bookkeeping",
+    vendor: "Notion",
+    invoiceNumber: "NOT-2026-0882",
+    amount: 960,
+    currency: "USD",
+    date: "2026-06-25",
+    processedAt: "2026-06-25T11:05:00",
+    processingDuration: "44s",
+    actionLabel: "Approved",
+    fieldStats: { total: 7, confident: 5, escalated: 2 },
+    userOverride: 2,
+    summary: "Annual workspace renewal — 2 fields corrected by reviewer",
+    aiSummary: "I read the Notion invoice and matched it to the vendor's prior history. Most fields coded the same as last year. I wasn't fully confident on the department and cost center — Notion is shared across teams and I went with Engineering based on the account owner, but it looks like that's changed. Two fields were corrected.",
+    codedTo: "Expenses_SaaS_6090 / Product",
+    feedbackFields: [
+      { label: "Department",   aiValue: "Engineering",  humanValue: "Product" },
+      { label: "Cost center",  aiValue: "CC-1002",      humanValue: "CC-2010" },
+    ],
+    log: [
+      { id: "l1", action: "Fetch",    detail: "Payer profile",                   reasoning: "I pulled the payer profile. Noga Yankobar is the AP contact. Auto-approve limit is $15,000." },
+      { id: "l2", action: "Fetch",    detail: "Vendor profile: Notion",          reasoning: "Notion has been with Tipalti since 2022 — 3 prior invoices. Annual workspace subscription. Previously coded to Engineering." },
+      { id: "l3", action: "Extract",  detail: "Invoice number → NOT-2026-0882",  reasoning: "Found in the document header." },
+      { id: "l4", action: "Extract",  detail: "Vendor → Notion",                 reasoning: "Matched to 'Notion Labs Inc.' in Tipalti — 100% similarity." },
+      { id: "l5", action: "Extract",  detail: "Amount → $960.00",                reasoning: "Found in the 'Total Due' field. Annual workspace plan for 20 seats." },
+      { id: "l6", action: "Classify", detail: "Expense account → Expenses_SaaS_6090", reasoning: "SaaS tool maps to the SaaS expense account. Consistent with prior invoices." },
+      { id: "l7", action: "Classify", detail: "Department → Engineering",        reasoning: "I used Engineering based on prior invoice history. I wasn't fully confident — Notion is used across teams and the account owner may have changed." },
+      { id: "l7f", action: "Flag",    detail: "Department raised for review",     reasoning: "I went with Engineering but I'm not confident. Notion is a cross-team tool and the primary owner could have shifted." },
+      { id: "l8", action: "Classify", detail: "Cost center → CC-1002",           reasoning: "Engineering cost center, following prior invoices. Same uncertainty as department." },
+      { id: "l8f", action: "Flag",    detail: "Cost center raised for review",    reasoning: "Cost center follows department — since I'm not sure about department, this one is uncertain too. Please verify both." },
+      { id: "l9", action: "Validate", detail: "Amount check: within normal range", reasoning: "$960 matches last year's renewal price. No anomaly." },
+      { id: "l10", action: "Decide",  detail: "Decided: routed for human review", reasoning: "I'm not confident on department and cost center. Routing for review before approving." },
+    ],
+  },
+  {
+    id: "task-013",
+    status: "approved",
+    type: "bookkeeping",
+    vendor: "Stripe",
+    invoiceNumber: "STR-2026-06-3341",
+    amount: 4420,
+    currency: "USD",
+    date: "2026-06-26",
+    processedAt: "2026-06-26T14:18:00",
+    processingDuration: "1m 02s",
+    actionLabel: "Approved",
+    fieldStats: { total: 8, confident: 5, escalated: 3 },
+    userOverride: 3,
+    summary: "Payment processing fees — 3 fields corrected by reviewer",
+    aiSummary: "I read the Stripe invoice and extracted the payment processing fees across three categories. Vendor history matched and the amount was within range. I wasn't confident on the project code, AP account, or location — Stripe fees are split across products and I wasn't sure which project this cycle maps to. Three fields were corrected after review.",
+    codedTo: "Expenses_Payments_6070 / Finance",
+    feedbackFields: [
+      { label: "Project",    aiValue: "Platform Q2 2026",   humanValue: "Payments Infrastructure" },
+      { label: "AP account", aiValue: "AP_Finance_2005",    humanValue: "AP_Payments_2008" },
+      { label: "Location",   aiValue: "New York Office",    humanValue: "San Mateo HQ" },
+    ],
+    log: [
+      { id: "l1", action: "Fetch",    detail: "Payer profile",                       reasoning: "Pulled the payer profile. Noga Yankobar is the AP contact. Auto-approve limit $15,000." },
+      { id: "l2", action: "Fetch",    detail: "Vendor profile: Stripe",              reasoning: "Stripe has been with Tipalti since 2021. Monthly payment processing invoices. Net-30 terms. All prior invoices approved." },
+      { id: "l3", action: "Fetch",    detail: "Invoice history: Stripe (last 3 months)", reasoning: "Apr: $4,100 / May: $4,280 / Jun: $4,420 — gradual increase, within expected range for growing transaction volume." },
+      { id: "l4", action: "Extract",  detail: "Invoice number → STR-2026-06-3341",   reasoning: "Found in the document header." },
+      { id: "l5", action: "Extract",  detail: "Amount → $4,420.00",                  reasoning: "Found in 'Total Due'. +3.3% from last month — within threshold." },
+      { id: "l6", action: "Classify", detail: "Expense account → Expenses_Payments_6070", reasoning: "Payment processing maps to the Payments expense account. Consistent with all prior invoices." },
+      { id: "l7", action: "Classify", detail: "Department → Finance",                reasoning: "Stripe fees are owned by Finance. Consistent with history." },
+      { id: "l8",  action: "Classify", detail: "Project → Platform Q2 2026",      reasoning: "I wasn't fully confident here — I used the open platform project code but Stripe fees are sometimes split differently." },
+      { id: "l8f", action: "Flag",    detail: "Project raised for review",         reasoning: "Stripe fees are split across products and I don't have a clear rule for which project this cycle belongs to. Please confirm." },
+      { id: "l9",  action: "Classify", detail: "AP account → AP_Finance_2005",    reasoning: "Used the Finance payables account based on department, but I wasn't sure if Stripe has a dedicated AP account." },
+      { id: "l9f", action: "Flag",    detail: "AP account raised for review",      reasoning: "I defaulted to the Finance AP account but Stripe may have its own. I'd rather you confirm than risk a mispost." },
+      { id: "l10", action: "Classify", detail: "Location → New York Office",      reasoning: "Finance team is primarily in New York, but Stripe processing may be attributed to HQ. Not confident." },
+      { id: "l10f", action: "Flag",   detail: "Location raised for review",        reasoning: "Finance sits in New York but Stripe's payment infrastructure is out of San Mateo. I flagged this one because it affects cost allocation." },
+      { id: "l11", action: "Validate", detail: "MoM threshold: +3.3% (within 20%)", reasoning: "$4,420 vs $4,280 last month = +3.3%. Well within threshold." },
+      { id: "l12", action: "Decide",   detail: "Decided: routed for human review",   reasoning: "I'm confident on expense account and department, but project, AP account, and location need confirmation." },
+    ],
+  },
+
+  // ── FLAGGED (low-confidence GL coding) ────────────────────────────────────────
+  {
+    id: "task-011",
+    status: "flagged",
+    type: "bookkeeping",
+    vendor: "Prime Ltd.",
+    invoiceNumber: "PRM-2026-0441",
+    amount: 2840,
+    currency: "USD",
+    date: "2026-06-24",
+    processedAt: "2026-06-24T10:22:00",
+    processingDuration: "1m 35s",
+    actionLabel: "Flagged for review",
+    fieldStats: { total: 8, confident: 7, escalated: 1 },
+    userOverride: "pending",
+    summary: "Mixed-purchase invoice — GL account flagged for review",
+    issue: "GL account changed from 110365 – Suppliers to 110358 – Marketing based on conference line items. Please verify the correct coding.",
+    aiSummary: "I read the Prime Ltd. invoice and matched the vendor to prior history. Department, cost center, and location all lined up with past bills. The only thing I wasn't sure about was the expense account — two of the three line items look like conference spend, not standard supplies, so I coded it to Marketing instead of Suppliers. I flagged that one field for you to confirm.",
+    lineItems: [
+      { description: "Office supplies — Q2 restock",            amount: 890  },
+      { description: "Marketing Summit 2026 — registration fees", amount: 1200 },
+      { description: "Conference booth materials",               amount: 750  },
+    ],
+    log: [
+      { id: "l1",  action: "Fetch",    detail: "Payer profile",                              reasoning: "I pulled the payer profile. Noga Yankobar is the AP contact. Auto-approve limit is $15,000." },
+      { id: "l2",  action: "Fetch",    detail: "Vendor profile: Prime Ltd.",                  reasoning: "Prime Ltd. is an established vendor — 6 prior invoices, all coded to 110365 – Suppliers. General business services vendor on Net-30 terms." },
+      { id: "l3",  action: "Fetch",    detail: "Invoice history: Prime Ltd. (last 6 months)", reasoning: "Consistent invoices ranging from $1,800 to $3,100. Always coded to 110365 – Suppliers. No prior flags." },
+      { id: "l4",  action: "Extract",  detail: "Invoice number → PRM-2026-0441",              reasoning: "Found in the document header." },
+      { id: "l5",  action: "Extract",  detail: "Vendor → Prime Ltd.",                         reasoning: "Matched to 'Prime Ltd.' in Tipalti — 100% similarity." },
+      { id: "l6",  action: "Extract",  detail: "Amount → $2,840.00",                          reasoning: "Found in the 'Total Due' field. Three line items." },
+      { id: "l7",  action: "Extract",  detail: "Date → Jun 24, 2026",                         reasoning: "Extracted from the document header." },
+      { id: "l8",  action: "Extract",  detail: "Line 1 — Office supplies → $890.00",          reasoning: "Standard supplies line. This maps to Suppliers as expected." },
+      { id: "l9",  action: "Extract",  detail: "Line 2 — Marketing Summit 2026 registration → $1,200.00", reasoning: "This line stood out — 'Marketing Summit 2026' is clearly an event registration, not a general supply purchase." },
+      { id: "l10", action: "Extract",  detail: "Line 3 — Conference booth materials → $750.00", reasoning: "Another conference-related line. Between lines 2 and 3, over $1,900 of this invoice is marketing-event spend." },
+      { id: "l11", action: "Classify",     detail: "Expense account → 110358 – Marketing",       reasoning: "All previous invoices from Prime Ltd. were coded to 110365 – Suppliers, but this invoice includes conference-related purchases so I coded it under 110358 – Marketing instead. I'm not fully confident this is right — the vendor history points one way, the line item content points another. Flagging for your review." },
+      { id: "l12", action: "Classify",     detail: "Department → Marketing",                      reasoning: "If the Marketing account is correct, the department should follow. I've coded it to Marketing but I'm holding for confirmation." },
+      { id: "l13", action: "Flag",     detail: "GL coding uncertain — vendor history conflicts with line item content", reasoning: "Prime Ltd. has always been a Suppliers vendor, but $1,950 of this invoice is clearly event/conference spend. I made my best call, but I want a human to confirm before this goes through." },
+      { id: "l14", action: "Decide",   detail: "Decided: flagged for review",                  reasoning: "The bill is coded and ready to go — I just need confirmation on the GL account before I can approve it." },
+    ],
+  },
+];

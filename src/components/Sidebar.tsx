@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
 
 // ─── Nav icons (outline style matching Tipalti) ──────────────────────────────
 
 function NavIcon({ type }: { type: string }) {
-  const cls = "w-5 h-5 flex-shrink-0";
+  const cls = "w-[18px] h-[18px] flex-shrink-0";
   switch (type) {
     case "home":
       return (
@@ -90,6 +90,14 @@ function NavIcon({ type }: { type: string }) {
           <path d="M4 6h12M4 10h12M4 14h12" strokeLinecap="round" />
         </svg>
       );
+    case "ai-settings":
+      return (
+        <svg className={cls} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <path d="M3 5h2m0 0a2 2 0 004 0m-4 0a2 2 0 014 0m0 0h8" strokeLinecap="round" />
+          <path d="M3 10h8m0 0a2 2 0 004 0m-4 0a2 2 0 014 0m0 0h2" strokeLinecap="round" />
+          <path d="M3 15h2m0 0a2 2 0 004 0m-4 0a2 2 0 014 0m0 0h8" strokeLinecap="round" />
+        </svg>
+      );
     default:
       return <div className={cls} />;
   }
@@ -99,7 +107,7 @@ function NavIcon({ type }: { type: string }) {
 
 function DropdownChevron() {
   return (
-    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className="ml-auto">
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className="ml-auto opacity-50">
       <path d="M3 4l2 2 2-2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
@@ -107,110 +115,101 @@ function DropdownChevron() {
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
-interface SidebarProps {
-  onNavigateHome?: () => void;
+interface NavItem {
+  id: string;
+  label: string;
+  icon: string;
+  href: string;
+  badge?: number;
+  dividerBefore?: boolean;
 }
 
-export default function Sidebar({ onNavigateHome }: SidebarProps) {
-  const [activeItem, setActiveItem] = useState("workforce");
+export default function Sidebar() {
+  const router = useRouter();
+  const pathname = usePathname();
 
-  const navItems: Array<{
-    id: string;
-    label: string;
-    icon: string;
-    badge?: number;
-    hasDropdown?: boolean;
-  }> = [
-    { id: "home", label: "Home", icon: "home" },
-    { id: "workforce", label: "AI Workforce", icon: "workforce", badge: 3 },
-    { id: "bills", label: "Bills", icon: "bills" },
-    { id: "payments", label: "Payments", icon: "payments", hasDropdown: true },
-    { id: "cards", label: "Cards", icon: "cards" },
-    { id: "expenses", label: "Expenses", icon: "expenses" },
-    { id: "payees", label: "Payees", icon: "payees" },
-    { id: "detect", label: "Detect", icon: "detect" },
-    { id: "integrations", label: "Integrations", icon: "integrations", hasDropdown: true },
-    { id: "reports", label: "Reports", icon: "reports" },
-    { id: "admin", label: "Administration", icon: "admin", hasDropdown: true },
+  const navItems: NavItem[] = [
+    { id: "home",        label: "Home",           icon: "home",        href: "#" },
+    { id: "workforce",   label: "AI Workforce",   icon: "workforce",   href: "/",           badge: 3 },
+    { id: "bills",       label: "Bills",           icon: "bills",       href: "#", dividerBefore: true },
+    { id: "payments",    label: "Payments",        icon: "payments",    href: "#" },
+    { id: "cards",       label: "Cards",           icon: "cards",       href: "#" },
+    { id: "expenses",    label: "Expenses",        icon: "expenses",    href: "#" },
+    { id: "payees",      label: "Payees",          icon: "payees",      href: "#" },
+    { id: "reports",     label: "Reports",         icon: "reports",     href: "#" },
+    { id: "admin",       label: "Administration",  icon: "admin",       href: "#", dividerBefore: true },
   ];
 
+  const isActive = (item: NavItem) => {
+    if (item.href === "/") return pathname === "/" || pathname.startsWith("/work-items");
+    return pathname.startsWith(item.href);
+  };
+
   return (
-    <aside className="w-[232px] flex-shrink-0 bg-[#1E2240] flex flex-col h-full sidebar-scroll overflow-y-auto">
-      {/* Logo area */}
-      <div className="px-4 py-4 flex items-center gap-3">
-        {/* Hamburger */}
-        <button className="text-white/60 hover:text-white transition-colors p-0.5">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-            <path d="M2 4.5h14M2 9h14M2 13.5h14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
-        </button>
-        {/* Tipalti logo */}
-        <div className="flex items-center">
-          <svg width="100" height="32" viewBox="0 0 100 32" fill="none">
-            {/* Orange swoosh arc */}
-            <path
-              d="M8 10C14 4, 28 2, 42 8"
-              stroke="url(#swooshGrad)"
-              strokeWidth="3.5"
-              strokeLinecap="round"
-              fill="none"
-            />
-            {/* tipalti text */}
-            <text
-              x="4"
-              y="26"
-              fontFamily="'Inter', system-ui, sans-serif"
-              fontWeight="800"
-              fontSize="20"
-              fontStyle="italic"
-              fill="white"
-              letterSpacing="-0.5"
-            >
-              tipalti
-            </text>
-            <defs>
-              <linearGradient id="swooshGrad" x1="8" y1="8" x2="42" y2="8" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#F5A623" />
-                <stop offset="1" stopColor="#E8951A" />
-              </linearGradient>
-            </defs>
-          </svg>
-        </div>
+    <aside className="w-14 flex-shrink-0 bg-white border-r border-tipalti-border flex flex-col h-full items-center py-4 sidebar-scroll overflow-y-auto">
+      {/* Tipalti logo */}
+      <div className="mb-6 flex-shrink-0">
+        <svg width="30" height="40" viewBox="0 0 30 40" fill="none">
+          <path
+            d="M8 8C13 3, 22 2, 26 6"
+            stroke="url(#sidebarSwoosh)"
+            strokeWidth="3.5"
+            strokeLinecap="round"
+            fill="none"
+          />
+          <text
+            x="7" y="35"
+            fontFamily="'Inter', system-ui, sans-serif"
+            fontWeight="800" fontSize="26" fontStyle="italic"
+            fill="#1A1A2E" letterSpacing="-0.5"
+          >
+            t
+          </text>
+          <defs>
+            <linearGradient id="sidebarSwoosh" x1="8" y1="5" x2="26" y2="5" gradientUnits="userSpaceOnUse">
+              <stop stopColor="#F5A623" />
+              <stop offset="1" stopColor="#E8951A" />
+            </linearGradient>
+          </defs>
+        </svg>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 px-3 pb-4 mt-1">
-        <ul className="space-y-0.5">
-          {navItems.map((item) => {
-            const isActive = item.id === activeItem;
-            return (
-              <li key={item.id}>
-                <button
-                  onClick={() => {
-                    setActiveItem(item.id);
-                    if (item.id === "workforce" && onNavigateHome) onNavigateHome();
-                  }}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] transition-colors relative ${
-                    isActive
-                      ? "bg-[#3B5BDB] text-white shadow-sm"
-                      : "text-white/60 hover:text-white hover:bg-white/[0.06]"
-                  }`}
-                >
+      {/* Nav items */}
+      <nav className="flex flex-col items-center gap-1 w-full px-2">
+        {navItems.map((item) => {
+          const active = isActive(item);
+          return (
+            <div key={item.id} className="w-full">
+              {item.dividerBefore && (
+                <div className="border-t border-tipalti-border mx-1 my-2" />
+              )}
+              <button
+                onClick={() => item.href !== "#" && router.push(item.href)}
+                title={item.label}
+                className={`relative w-full flex items-center justify-center h-9 rounded-lg transition-colors group ${
+                  active
+                    ? "bg-tipalti-navy text-white"
+                    : "text-tipalti-text-muted hover:text-tipalti-text-primary hover:bg-tipalti-bg-light"
+                }`}
+              >
+                {item.icon === "workforce" ? (
+                  <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M10 0C10 0 10.8 4 10 6C11.5 4.2 15 2 15 2C15 2 13 5.5 11.5 6.5C13.5 6 17 5.5 17 5.5C17 5.5 14 8 12 9C14 9.5 17 10.5 17 10.5C17 10.5 13.5 10.5 11.5 10C13 11 15 14.5 15 14.5C15 14.5 11.5 12.2 10 10.5C10.8 12.5 10 16.5 10 16.5C10 16.5 9.2 12.5 10 10.5C8.5 12.2 5 14.5 5 14.5C5 14.5 7 11 8.5 10C6.5 10.5 3 10.5 3 10.5C3 10.5 6 9.5 8 9C6 8 3 5.5 3 5.5C3 5.5 6.5 6 8.5 6.5C7 5.5 5 2 5 2C5 2 8.5 4.2 10 6C9.2 4 10 0 10 0Z" />
+                  </svg>
+                ) : (
                   <NavIcon type={item.icon} />
-                  <span className={`font-medium ${isActive ? "text-white" : ""}`}>
-                    {item.label}
-                  </span>
-                  {item.badge && (
-                    <span className="ml-auto bg-red-500 text-white text-[10px] font-bold rounded-full w-[18px] h-[18px] flex items-center justify-center leading-none">
-                      {item.badge}
-                    </span>
-                  )}
-                  {item.hasDropdown && !item.badge && <DropdownChevron />}
-                </button>
-              </li>
-            );
-          })}
-        </ul>
+                )}
+                {item.badge && !active && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
+                )}
+                {/* Tooltip */}
+                <span className="absolute left-full ml-2 px-2 py-1 rounded bg-tipalti-navy text-white text-[11px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg">
+                  {item.label}
+                </span>
+              </button>
+            </div>
+          );
+        })}
       </nav>
     </aside>
   );

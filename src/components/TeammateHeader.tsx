@@ -1,123 +1,115 @@
 "use client";
 
-import { Teammate } from "@/data/mockData";
+import { teammate } from "@/data/mockData";
 
-type Tab = "overview" | "execution" | "policies" | "control";
+type Tab = "feed" | "instructions";
 
 const tabs: Array<{ id: Tab; label: string }> = [
-  { id: "overview", label: "Overview" },
-  { id: "execution", label: "Execution Feed" },
-  { id: "policies", label: "Policies & Guardrails" },
-  { id: "control", label: "Control" },
+  { id: "feed", label: "Work Items" },
+  { id: "instructions", label: "Instructions" },
 ];
 
-function KpiCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
+// ─── Metrics ──────────────────────────────────────────────────────────────────
+
+function sparklinePath(data: number[]): { line: string; area: string } {
+  const w = 80, h = 26;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const step = w / (data.length - 1);
+  const pts = data.map((d, i) => ({
+    x: +(i * step).toFixed(1),
+    y: +(h - ((d - min) / range) * (h * 0.75) - h * 0.1).toFixed(1),
+  }));
+  const line = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
+  const area = `${line} L${w},${h} L0,${h} Z`;
+  return { line, area };
+}
+
+const METRICS = [
+  {
+    label: "Processed",
+    value: "47",
+    sub: "this month",
+    trend: "↑ 4.2%",
+    trendClass: "text-tipalti-success bg-tipalti-success-bg",
+    data: [30, 35, 28, 40, 38, 45, 47],
+    color: "#0065FF",
+  },
+  {
+    label: "Avg confidence",
+    value: "94%",
+    sub: "across all fields",
+    trend: "↑ 2.1%",
+    trendClass: "text-tipalti-success bg-tipalti-success-bg",
+    data: [88, 90, 91, 92, 93, 94, 94],
+    color: "#36B37E",
+  },
+  {
+    label: "Override rate",
+    value: "8%",
+    sub: "of reviewed",
+    trend: "↓ 3.2%",
+    trendClass: "text-tipalti-success bg-tipalti-success-bg",
+    data: [14, 12, 13, 11, 10, 9, 8],
+    color: "#0065FF",
+  },
+] as const;
+
+function MetricsRow() {
   return (
-    <div className="bg-white rounded-lg border border-tipalti-border px-4 py-3 shadow-card">
-      <p className="text-[11px] text-tipalti-text-muted uppercase tracking-wide mb-1">{label}</p>
-      <p className="text-xl font-bold text-tipalti-text-primary">{value}</p>
-      {sub && <p className="text-[11px] text-tipalti-text-muted mt-0.5">{sub}</p>}
+    <div className="grid grid-cols-3 gap-3 my-5">
+      {METRICS.map((m) => {
+        const { line, area } = sparklinePath([...m.data]);
+        return (
+          <div key={m.label} className="bg-white rounded-lg border border-tipalti-border px-4 py-3 flex items-center justify-between">
+            <div className="flex flex-col gap-1">
+              <p className="text-[11px] font-medium text-tipalti-text-muted uppercase tracking-wide">{m.label}</p>
+              <div className="flex items-baseline gap-1.5">
+                <p className="text-[22px] font-bold text-tipalti-text-primary leading-none">{m.value}</p>
+                <p className="text-[11px] text-tipalti-text-muted">{m.sub}</p>
+              </div>
+              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded self-start ${m.trendClass}`}>
+                {m.trend}
+              </span>
+            </div>
+            <svg width="80" height="26" viewBox="0 0 80 26" fill="none">
+              <path d={area} fill={m.color} fillOpacity="0.08" />
+              <path d={line} stroke={m.color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+        );
+      })}
     </div>
   );
 }
 
-function StatusDot({ active }: { active: boolean }) {
-  return (
-    <span className="relative flex h-2.5 w-2.5">
-      {active && (
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-tipalti-success opacity-75" />
-      )}
-      <span
-        className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
-          active ? "bg-tipalti-success" : "bg-tipalti-text-muted"
-        }`}
-      />
-    </span>
-  );
-}
-
 interface TeammateHeaderProps {
-  teammate: Teammate;
   activeTab: Tab;
   onTabChange: (tab: Tab) => void;
-  onBack: () => void;
 }
 
-export default function TeammateHeader({ teammate, activeTab, onTabChange, onBack }: TeammateHeaderProps) {
-  const tokenPct = Math.round((teammate.tokensUsed / teammate.tokenLimit) * 100);
-
+export default function TeammateHeader({ activeTab, onTabChange }: TeammateHeaderProps) {
   return (
     <div>
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-1.5 text-xs text-tipalti-text-muted mb-4">
-        <button
-          onClick={onBack}
-          className="hover:text-tipalti-blue cursor-pointer transition-colors"
+      {/* Identity row */}
+      <div className="flex items-center gap-4 mb-5">
+        <div
+          className="w-11 h-11 rounded-xl flex items-center justify-center shadow-card flex-shrink-0"
+          style={{ backgroundColor: teammate.avatarColor }}
         >
-          AI Workforce
-        </button>
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-          <path d="M3.5 2l3 3-3 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-        <span className="text-tipalti-text-primary font-medium">{teammate.name}</span>
-      </div>
-
-      {/* Teammate identity */}
-      <div className="flex items-start justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center shadow-card"
-            style={{ backgroundColor: teammate.avatarColor }}
-          >
-            <span className="text-white font-bold text-sm">{teammate.avatar}</span>
-          </div>
-          <div>
-            <div className="flex items-center gap-2.5">
-              <h1 className="text-xl font-bold text-tipalti-text-primary">{teammate.name}</h1>
-              <div className="flex items-center gap-1.5">
-                <StatusDot active={teammate.status === "active"} />
-                <span className={`text-xs font-medium capitalize ${
-                  teammate.status === "active" ? "text-tipalti-success" : "text-tipalti-text-muted"
-                }`}>
-                  {teammate.status === "dry_run" ? "Dry Run" : teammate.status}
-                </span>
-              </div>
-            </div>
-            <p className="text-xs text-tipalti-text-muted mt-0.5">
-              Powered by {teammate.model} &middot; {teammate.tasksToday} tasks today
-            </p>
-          </div>
+          <span className="text-white font-bold text-sm">{teammate.avatar}</span>
         </div>
-
-        {/* Token usage */}
-        <div className="bg-white border border-tipalti-border rounded-lg px-4 py-3 shadow-card min-w-[200px]">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] text-tipalti-text-muted font-medium uppercase tracking-wide">
-              Token usage
-            </span>
-            <span className="text-xs font-semibold text-tipalti-text-primary">{tokenPct}%</span>
-          </div>
-          <div className="w-full bg-tipalti-bg-light rounded-full h-1.5 mb-1.5">
-            <div
-              className={`h-1.5 rounded-full transition-all ${
-                tokenPct > 80 ? "bg-tipalti-danger" : tokenPct > 60 ? "bg-tipalti-warning" : "bg-tipalti-blue"
-              }`}
-              style={{ width: `${tokenPct}%` }}
-            />
-          </div>
-          <p className="text-[10px] text-tipalti-text-muted">
-            {(teammate.tokensUsed / 1000).toFixed(0)}k / {(teammate.tokenLimit / 1000).toFixed(0)}k tokens
+        <div>
+          <h1 className="text-lg font-bold text-tipalti-text-primary">{teammate.name}</h1>
+          <p className="text-xs text-tipalti-text-muted mt-0.5">
+            {teammate.domain} &middot; {teammate.job}
           </p>
         </div>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-4 gap-3 mb-6">
-        <KpiCard label="Automation rate" value={`${teammate.automationRate}%`} sub="of items processed" />
-        <KpiCard label="Accuracy" value={`${teammate.accuracy}%`} sub="no human correction needed" />
-        <KpiCard label="Time saved" value={teammate.timeSaved} sub="this month" />
-        <KpiCard label="Cost saved" value={teammate.costSaved} sub="estimated this month" />
-      </div>
+      {/* Metrics */}
+      <MetricsRow />
 
       {/* Tabs */}
       <div className="border-b border-tipalti-border">

@@ -11,18 +11,23 @@ const statusConfig: Record<
   TaskStatus,
   { label: string; className: string; dot: string; icon?: React.ReactNode }
 > = {
-  needs_attention: {
-    label: "Needs Attention",
+  flagged: {
+    label: "Flagged for review",
     className: "bg-tipalti-danger-bg text-tipalti-danger",
     dot: "bg-tipalti-danger",
   },
-  in_progress: {
-    label: "In Progress",
-    className: "bg-tipalti-info-bg text-tipalti-info",
-    dot: "bg-tipalti-info",
+  pending_review: {
+    label: "Pending review",
+    className: "bg-gray-100 text-gray-600",
+    dot: "bg-gray-400",
   },
-  completed: {
-    label: "Completed",
+  auto_approved: {
+    label: "Auto-approved",
+    className: "bg-tipalti-success-bg text-tipalti-success",
+    dot: "bg-tipalti-success",
+  },
+  approved: {
+    label: "Approved",
     className: "bg-tipalti-success-bg text-tipalti-success",
     dot: "bg-tipalti-success",
   },
@@ -31,15 +36,9 @@ const statusConfig: Record<
 const typeConfig: Record<TaskType, { label: string; className: string }> = {
   bookkeeping: { label: "Bookkeeping", className: "bg-tipalti-purple-bg text-tipalti-purple" },
   validation: { label: "Validation", className: "bg-tipalti-info-bg text-tipalti-blue" },
-  approval: { label: "Approval", className: "bg-tipalti-warning-bg text-tipalti-warning" },
   routing: { label: "Routing", className: "bg-gray-100 text-gray-600" },
   anomaly: { label: "Anomaly", className: "bg-tipalti-danger-bg text-tipalti-danger" },
   extraction: { label: "Extraction", className: "bg-tipalti-info-bg text-tipalti-blue" },
-  duplicate: { label: "Duplicate", className: "bg-tipalti-danger-bg text-tipalti-danger" },
-  policy_violation: { label: "Policy Violation", className: "bg-tipalti-warning-bg text-tipalti-warning" },
-  fraud_signal: { label: "Fraud Signal", className: "bg-tipalti-danger-bg text-tipalti-danger" },
-  receipt_audit: { label: "Receipt Audit", className: "bg-tipalti-info-bg text-tipalti-blue" },
-  spend_pattern: { label: "Spend Pattern", className: "bg-tipalti-purple-bg text-tipalti-purple" },
 };
 
 export function StatusBadge({ status, type, label, size = "sm" }: StatusBadgeProps) {
