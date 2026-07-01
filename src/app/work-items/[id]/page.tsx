@@ -1,21 +1,15 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import { notFound } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import WorkItemDetail from "@/components/WorkItemDetail";
-import { tasks, Task } from "@/data/mockData";
+import { tasks } from "@/data/mockData";
+
+export function generateStaticParams() {
+  return tasks.map((t) => ({ id: t.id }));
+}
 
 export default function WorkItemPage({ params }: { params: { id: string } }) {
-  const [task, setTask] = useState<Task | null | undefined>(undefined);
-
-  useEffect(() => {
-    const found = tasks.find((t) => t.id === params.id);
-    setTask(found ?? null);
-  }, [params.id]);
-
-  if (task === undefined) return null;
-  if (task === null) notFound();
+  const task = tasks.find((t) => t.id === params.id);
+  if (!task) notFound();
 
   return (
     <div className="flex h-screen overflow-hidden bg-tipalti-bg-light">
