@@ -825,29 +825,7 @@ export default function Instructions() {
           {/* Card body */}
           {mode === "preview" ? (
             <div className="flex-1">
-              {/* Conflict banner */}
-              {conflictPairs.length > 0 && (
-                <div className="mx-5 mt-3.5 rounded-lg border border-red-200 bg-red-50 px-3.5 py-2.5 flex items-center gap-2.5">
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#DE350B" strokeWidth="1.4" style={{ flexShrink: 0 }}>
-                    <path d="M7 1.5L1 12.5h12L7 1.5z" strokeLinejoin="round" />
-                    <path d="M7 5.5v3M7 10v.5" strokeLinecap="round" />
-                  </svg>
-                  <p className="text-[12px] text-red-800 flex-1">
-                    <span className="font-semibold">{conflictPairs.length} conflict detected</span>
-                    {" — "}2 rules apply to &ldquo;{conflictPairs[0][0].split("→")[0].trim()}&rdquo; but route to different approvers.
-                  </p>
-                  <button
-                    onClick={openChatForConflict}
-                    className="text-[12px] font-semibold text-tipalti-blue hover:underline whitespace-nowrap flex-shrink-0 flex items-center gap-1"
-                  >
-                    Resolve with AI
-                    <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.4">
-                      <path d="M2 8L8 2M8 2H5M8 2V5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </button>
-                </div>
-              )}
-              <MarkdownPreview content={content} conflictSet={conflictSet} />
+              <MarkdownPreview content={content} />
             </div>
           ) : (
             <div className="flex-1 flex flex-col">
