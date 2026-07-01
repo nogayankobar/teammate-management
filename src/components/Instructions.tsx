@@ -345,8 +345,9 @@ export default function Instructions() {
   const [content, setContent]       = useState(activeVersion.content);
   const [isDirty, setIsDirty]       = useState(false);
   const [warnings, setWarnings]     = useState<string[]>([]);
-  const [showWarnings, setShowWarnings] = useState(false);
-  const [showConfirm, setShowConfirm]   = useState(false);
+  const [showWarnings, setShowWarnings]         = useState(false);
+  const [showConfirm, setShowConfirm]           = useState(false);
+  const [showConflictBlock, setShowConflictBlock] = useState(false);
   const [draftSaved, setDraftSaved]     = useState(false);
   const [historyOpen, setHistoryOpen]   = useState(false);
   const [versions, setVersions]         = useState<InstructionVersion[]>(instructionVersions);
@@ -592,6 +593,7 @@ export default function Instructions() {
     setDraftSaved(false);
     setShowWarnings(false);
     setShowConfirm(false);
+    setShowConflictBlock(false);
   };
 
   const handleEnterEdit = () => setMode("edit");
@@ -605,6 +607,7 @@ export default function Instructions() {
     setDraftSaved(false);
     setShowWarnings(false);
     setShowConfirm(false);
+    setShowConflictBlock(false);
     setMode("preview");
   };
 
@@ -616,6 +619,15 @@ export default function Instructions() {
   };
 
   const handlePublish = () => {
+    // Conflicts are a hard block — no "publish anyway"
+    const editConflicts = detectConflictPairs(content);
+    if (editConflicts.length > 0) {
+      setShowConflictBlock(true);
+      setShowWarnings(false);
+      setShowConfirm(false);
+      return;
+    }
+    setShowConflictBlock(false);
     const w = validate(content);
     setWarnings(w);
     if (w.length > 0) {
@@ -848,6 +860,35 @@ export default function Instructions() {
                 spellCheck={false}
                 autoFocus
               />
+              {/* Conflict block */}
+              {showConflictBlock && detectConflictPairs(content).length > 0 && (
+                <div className="border-t border-red-200 bg-red-50 px-4 py-3 flex-shrink-0">
+                  <div className="flex items-start gap-2.5">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#DE350B" strokeWidth="1.4" className="flex-shrink-0 mt-0.5">
+                      <path d="M7 1.5L1 12.5h12L7 1.5z" strokeLinejoin="round" />
+                      <path d="M7 5.5v3M7 10v.5" strokeLinecap="round" />
+                    </svg>
+                    <div>
+                      <p className="text-[12px] font-semibold text-tipalti-danger">
+                        Cannot publish — conflict detected
+                      </p>
+                      <p className="text-[12px] text-tipalti-text-secondary mt-0.5 leading-relaxed">
+                        Two rules apply to &ldquo;{detectConflictPairs(content)[0][0].split("→")[0].trim()}&rdquo; but route to different approvers. Resolve the conflict before publishing.
+                      </p>
+                      <button
+                        onClick={() => { setMode("preview"); openChatForConflict(); }}
+                        className="mt-1.5 text-[12px] font-medium text-tipalti-blue hover:underline flex items-center gap-1"
+                      >
+                        Resolve with AI
+                        <svg width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.4">
+                          <path d="M2 8L8 2M8 2H5M8 2V5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Warnings */}
               {showWarnings && warnings.length > 0 && (
                 <div className="border-t border-yellow-200 bg-tipalti-warning-bg px-4 py-3 flex-shrink-0">
@@ -893,7 +934,7 @@ export default function Instructions() {
                 disabled={content === published.content && !isDirty}
                 className="text-[13px] font-semibold text-white bg-tipalti-blue rounded-md px-4 py-1.5 hover:bg-tipalti-blue-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
               >
-                Publish
+                {showConflictBlock ? "Conflict detected" : "Publish"}
               </button>
             </div>
           )}
