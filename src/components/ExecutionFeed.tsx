@@ -337,8 +337,6 @@ function AskAIPanel({ task, onClose }: { task: Task; onClose: () => void }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-const VENDORS = Array.from(new Set(tasks.map((t) => t.vendor))).sort();
-
 const TIME_OPTIONS = [
   { value: "7d",  label: "Last 7 days" },
   { value: "30d", label: "Last 30 days" },
@@ -348,7 +346,6 @@ const TIME_OPTIONS = [
 export default function ExecutionFeed() {
   const router = useRouter();
   const [search, setSearch] = useState("");
-  const [vendorFilter, setVendorFilter] = useState("all");
   const [timeFilter, setTimeFilter] = useState("7d");
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [askAITask, setAskAITask] = useState<Task | null>(null);
@@ -361,7 +358,6 @@ export default function ExecutionFeed() {
       cutoff.setDate(cutoff.getDate() - days);
       result = result.filter((t) => new Date(t.processedAt) >= cutoff);
     }
-    if (vendorFilter !== "all") result = result.filter((t) => t.vendor === vendorFilter);
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       result = result.filter(
@@ -372,10 +368,10 @@ export default function ExecutionFeed() {
       );
     }
     return result;
-  }, [timeFilter, vendorFilter, search]);
+  }, [timeFilter, search]);
 
   const formatAmount = (amount: number) =>
-    amount.toLocaleString("en-US", { minimumFractionDigits: 2 });
+    amount.toLocaleString("en-US", { maximumFractionDigits: 0 });
   const formatProcessed = (dt: string) => {
     const d = new Date(dt);
     return {
@@ -384,29 +380,9 @@ export default function ExecutionFeed() {
     };
   };
 
-  const activeFilters: Array<{ label: string; onRemove: () => void }> = [];
-  if (vendorFilter !== "all") activeFilters.push({ label: `Vendor: ${vendorFilter}`, onRemove: () => setVendorFilter("all") });
-
   return (
     <div>
-      {/* Top bar: search */}
-      <div className="flex items-center justify-end mb-3">
-        <div className="relative">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-tipalti-text-muted" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4">
-            <circle cx="6" cy="6" r="4.5" />
-            <path d="M9.5 9.5L13 13" strokeLinecap="round" />
-          </svg>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search"
-            className="text-sm border border-tipalti-border rounded-md bg-white pl-9 pr-3 py-1.5 text-tipalti-text-primary focus:outline-none focus:ring-2 focus:ring-tipalti-blue w-56"
-          />
-        </div>
-      </div>
-
-      {/* Filter chips row */}
+      {/* Filter + search row */}
       <div className="flex items-center gap-2 mb-4">
         <div className="relative">
           <select
@@ -421,38 +397,27 @@ export default function ExecutionFeed() {
           </svg>
         </div>
 
-        <div className="relative">
-          <select
-            value={vendorFilter}
-            onChange={(e) => setVendorFilter(e.target.value)}
-            className="appearance-none text-sm border border-tipalti-border rounded-full bg-white px-3 py-1 pr-7 text-tipalti-text-secondary focus:outline-none focus:ring-2 focus:ring-tipalti-blue cursor-pointer"
-          >
-            <option value="all">All vendors</option>
-            {VENDORS.map((v) => <option key={v} value={v}>{v}</option>)}
-          </select>
-          <svg className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-tipalti-text-muted" width="11" height="11" viewBox="0 0 11 11" fill="none">
-            <path d="M2 4l3.5 3.5L9 4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+        <span className="text-sm text-tipalti-text-muted">{filtered.length} items</span>
+
+        <div className="relative ml-auto">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-tipalti-text-muted" width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4">
+            <circle cx="6" cy="6" r="4.5" />
+            <path d="M9.5 9.5L13 13" strokeLinecap="round" />
           </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search"
+            className="text-sm border border-tipalti-border rounded-md bg-white pl-9 pr-3 py-1.5 text-tipalti-text-primary focus:outline-none focus:ring-2 focus:ring-tipalti-blue w-56"
+          />
         </div>
-
-        {activeFilters.map((f) => (
-          <span key={f.label} className="inline-flex items-center gap-1.5 text-sm border border-tipalti-border rounded-full bg-white px-3 py-1 text-tipalti-text-secondary">
-            {f.label}
-            <button onClick={f.onRemove} className="text-tipalti-text-muted hover:text-tipalti-text-primary">
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                <path d="M2 2l6 6M8 2l-6 6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-              </svg>
-            </button>
-          </span>
-        ))}
-
-        <span className="text-sm text-tipalti-text-muted ml-auto">{filtered.length} items</span>
       </div>
 
       {/* Table */}
       <div className="border-t border-tipalti-border">
-        <div className="grid grid-cols-[96px_2fr_100px_64px_120px_140px_28px_32px] gap-4 px-4 py-3 border-b border-tipalti-border">
-          {["Time", "Vendor", "Amount", "Duration", "Confidence", "Override"].map((col) => (
+        <div className="grid grid-cols-[96px_2fr_64px_120px_140px_28px_32px] gap-4 px-4 py-3 border-b border-tipalti-border">
+          {["Time", "Item", "Duration", "Confidence", "Override"].map((col) => (
             <button key={col} className="flex items-center text-sm font-semibold text-tipalti-text-primary text-left hover:text-tipalti-blue transition-colors group">
               {col}
               <SortIcon />
@@ -470,7 +435,7 @@ export default function ExecutionFeed() {
           filtered.map((task) => (
             <div
               key={task.id}
-              className="grid grid-cols-[96px_2fr_100px_64px_120px_140px_28px_32px] gap-4 px-4 py-3.5 border-b border-tipalti-border hover:bg-[#FAFBFF] transition-colors group items-center cursor-pointer"
+              className="grid grid-cols-[96px_2fr_64px_120px_140px_28px_32px] gap-4 px-4 py-3.5 border-b border-tipalti-border hover:bg-[#FAFBFF] transition-colors group items-center cursor-pointer"
               onClick={() => router.push(`/work-items/${task.id}`)}
             >
               <div>
@@ -480,15 +445,10 @@ export default function ExecutionFeed() {
 
               <div className="min-w-0">
                 <p className="text-sm font-medium text-tipalti-text-primary truncate group-hover:text-tipalti-blue transition-colors">
-                  {task.vendor}
+                  {task.vendor} - {formatAmount(task.amount)}
                 </p>
                 <p className="text-[11px] text-tipalti-text-muted font-mono">{task.invoiceNumber}</p>
               </div>
-
-              <span className="text-sm text-tipalti-text-primary">
-                <span className="text-[11px] text-tipalti-text-muted mr-1">{task.currency}</span>
-                {formatAmount(task.amount)}
-              </span>
 
               <span className="text-sm text-tipalti-text-secondary font-mono">{task.processingDuration}</span>
 
