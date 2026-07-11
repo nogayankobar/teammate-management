@@ -33,11 +33,11 @@ export function AnnotationZone({
       {hovered && (
         <div
           className={`absolute inset-0 z-30 flex flex-col items-center justify-center gap-1
-            bg-gray-700/70 border-2 border-dashed border-gray-400 pointer-events-none ${rounded}`}
+            bg-white/85 border-2 border-dashed border-gray-400 pointer-events-none ${rounded}`}
         >
-          <span className="text-white text-[13px] font-semibold tracking-wide">{label}</span>
+          <span className="text-gray-900 text-[13px] font-semibold tracking-wide">{label}</span>
           {description && (
-            <span className="text-white/75 text-[11px] text-center leading-tight px-3">
+            <span className="text-gray-500 text-[11px] text-center leading-tight px-3">
               {description}
             </span>
           )}

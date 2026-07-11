@@ -59,6 +59,7 @@ function KpiCard({
   sub,
   delta,
   deltaPositive,
+  deltaDown,
   sparkPoints,
   sparkColor,
 }: {
@@ -67,9 +68,11 @@ function KpiCard({
   sub?: string;
   delta: string;
   deltaPositive: boolean;
+  deltaDown?: boolean;
   sparkPoints: number[];
   sparkColor: string;
 }) {
+  const arrowDown = deltaDown ?? !deltaPositive;
   return (
     <div className="flex-1 px-6 py-4 flex flex-col gap-1.5">
       <p className="text-[11px] font-semibold text-tipalti-text-muted uppercase tracking-wide">{label}</p>
@@ -83,7 +86,7 @@ function KpiCard({
               className={deltaPositive ? "text-tipalti-success" : "text-tipalti-danger"}
             >
               <path
-                d={deltaPositive ? "M5.5 9V2M2 5.5l3.5-3.5 3.5 3.5" : "M5.5 2v7M2 5.5l3.5 3.5 3.5-3.5"}
+                d={arrowDown ? "M5.5 2v7M2 5.5l3.5 3.5 3.5-3.5" : "M5.5 9V2M2 5.5l3.5-3.5 3.5 3.5"}
                 stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"
               />
             </svg>
@@ -138,6 +141,18 @@ export default function KpiBar() {
         sparkPoints={[7, 8, 9, 10, 11, 12, automationRate]}
         sparkColor="#6554C0"
       />
+      <AnnotationZone label="Consumer" description="Agent-defined KPI. Label, value and formula set by the agent owner." className="flex-1" rounded="rounded-none">
+        <KpiCard
+          label="Avg review time"
+          value="13h"
+          sub="24h across all items"
+          delta="-7.3%"
+          deltaPositive
+          deltaDown
+          sparkPoints={[24, 22, 20, 19, 17, 15, 13]}
+          sparkColor="#8777D9"
+        />
+      </AnnotationZone>
     </div>
     </AnnotationZone>
   );

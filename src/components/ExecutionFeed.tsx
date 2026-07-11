@@ -435,23 +435,23 @@ export default function ExecutionFeed() {
                 <p className="text-[11px] text-tipalti-text-muted">{formatProcessed(task.processedAt).time}</p>
               </div>
 
-              <div className="min-w-0">
-                <AnnotationZone label="Fixed · Required field" description="Agent provides item title per schema. Platform defines position and format.">
-                  <p className="text-sm font-medium text-tipalti-text-primary truncate group-hover:text-tipalti-blue transition-colors">
-                    {task.vendor}
-                  </p>
-                </AnnotationZone>
-                <AnnotationZone label="Fixed · Optional field" description="Agent can provide a subtitle or omit it. Platform defines format if shown.">
-                  <p className="text-[11px] text-tipalti-text-muted mt-0.5">
-                    {formatInvoiceDate(task.date)} · {task.currency} {formatAmount(task.amount)}
-                  </p>
-                </AnnotationZone>
-              </div>
+              <AnnotationZone
+                label="Fixed"
+                description="Title (required field) · Subtitle (optional field)"
+                className="min-w-0"
+              >
+                <p className="text-sm font-medium text-tipalti-text-primary truncate group-hover:text-tipalti-blue transition-colors">
+                  {task.vendor}
+                </p>
+                <p className="text-[11px] text-tipalti-text-muted mt-0.5">
+                  {formatInvoiceDate(task.date)} · {task.currency} {formatAmount(task.amount)}
+                </p>
+              </AnnotationZone>
 
               <span className="text-sm text-tipalti-text-secondary font-mono">{task.processingDuration}</span>
 
               <HumanReviewCell reasons={task.humanReviewReason} />
-              <AnnotationZone label="Fixed" description="Platform-defined vocabulary. Consumer maps agent state to platform values.">
+              <AnnotationZone label="Fixed">
                 <StatusCell task={task} />
               </AnnotationZone>
               <span className="text-[13px] text-tipalti-text-secondary">{task.credits}</span>
