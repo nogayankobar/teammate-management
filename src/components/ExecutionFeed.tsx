@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { tasks, Task, FieldStats } from "@/data/mockData";
+import { tasks, Task } from "@/data/mockData";
 
 // ─── Portal ───────────────────────────────────────────────────────────────────
 
@@ -24,13 +24,6 @@ function DiamondIcon({ size = 13 }: { size?: number }) {
   );
 }
 
-function FlagIcon({ size = 13 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 14 14" fill="none" style={{ display: "block" }}>
-      <path d="M3 1.5V13M3 1.5h7l-2 3.5 2 3.5H3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
 
 function SortIcon() {
   return (
@@ -41,50 +34,43 @@ function SortIcon() {
   );
 }
 
-// ─── Confidence + Override cells ──────────────────────────────────────────────
+// ─── Status + Human review cells ─────────────────────────────────────────────
 
-function ConfidenceCell({ stats }: { stats: FieldStats }) {
-  const pct = Math.round((stats.confident / stats.total) * 100);
-  const cls = pct === 100
-    ? "bg-tipalti-success-bg text-tipalti-success"
-    : pct >= 80
-    ? "bg-blue-50 text-tipalti-blue"
-    : "bg-tipalti-warning-bg text-tipalti-warning";
+function getDisplayStatus(task: Task): { label: string; color: "green" | "amber" | "blue" | "gray" | "red" } {
+  if (task.status === "in_progress") return { label: "In progress", color: "gray" };
+  if (task.status === "error")       return { label: "Error", color: "red" };
+  if (task.status === "abandoned")   return { label: "Abandoned", color: "gray" };
+  if (task.status === "flagged" || task.status === "pending_review") {
+    return { label: "Awaiting human review", color: "amber" };
+  }
+  if (typeof task.userOverride === "number" && task.userOverride > 0) {
+    return { label: "Approved with changes", color: "blue" };
+  }
+  if (task.status === "auto_approved") {
+    return { label: "Auto approved", color: "green" };
+  }
+  return { label: "Approved w/o changes", color: "green" };
+}
+
+function StatusCell({ task }: { task: Task }) {
+  const { label, color } = getDisplayStatus(task);
+  const cls = {
+    green: "bg-tipalti-success-bg text-tipalti-success",
+    amber: "bg-tipalti-warning-bg text-tipalti-warning",
+    blue:  "bg-blue-50 text-tipalti-blue",
+    gray:  "bg-gray-100 text-gray-500",
+    red:   "bg-red-50 text-red-600",
+  }[color];
   return (
     <span className={`inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full ${cls}`}>
-      {pct}% · {stats.confident}/{stats.total}
+      {label}
     </span>
   );
 }
 
-function OverrideCell({ override }: { override: Task["userOverride"] }) {
-  const base = "inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full";
-  if (override === "none")
-    return <span className={`${base} bg-tipalti-success-bg text-tipalti-success`}>No overrides</span>;
-  if (override === "pending")
-    return <span className={`${base} bg-gray-100 text-gray-500`}>Not yet reviewed</span>;
-  return (
-    <span className={`${base} bg-tipalti-warning-bg text-tipalti-warning`}>
-      {override} override{(override as number) > 1 ? "s" : ""}
-    </span>
-  );
-}
-
-// ─── Flag cell ────────────────────────────────────────────────────────────────
-
-function FlagCell({ task }: { task: Task }) {
-  if (task.status !== "flagged" || !task.issue) return <div />;
-  return (
-    <div className="relative group/flag flex items-center justify-center">
-      <button className="p-0.5 text-tipalti-warning hover:text-tipalti-danger transition-colors">
-        <FlagIcon size={13} />
-      </button>
-      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-56 bg-tipalti-text-primary text-white text-[11px] leading-snug px-2.5 py-2 rounded-lg shadow-lg invisible group-hover/flag:visible z-20 pointer-events-none">
-        {task.issue}
-        <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-tipalti-text-primary" />
-      </div>
-    </div>
-  );
+function HumanReviewCell({ reasons }: { reasons?: string[] }) {
+  if (!reasons || reasons.length === 0) return <span className="text-[13px] text-tipalti-text-muted">-</span>;
+  return <span className="text-[12px] text-tipalti-text-secondary leading-tight">{reasons.join(", ")}</span>;
 }
 
 // ─── Row dropdown menu ────────────────────────────────────────────────────────
@@ -367,11 +353,17 @@ export default function ExecutionFeed() {
           t.summary.toLowerCase().includes(q)
       );
     }
-    return result;
+    return [...result].sort(
+      (a, b) => new Date(b.processedAt).getTime() - new Date(a.processedAt).getTime()
+    );
   }, [timeFilter, search]);
 
   const formatAmount = (amount: number) =>
     amount.toLocaleString("en-US", { maximumFractionDigits: 0 });
+  const formatInvoiceDate = (dateStr: string) => {
+    const d = new Date(dateStr + "T00:00:00");
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  };
   const formatProcessed = (dt: string) => {
     const d = new Date(dt);
     return {
@@ -416,14 +408,13 @@ export default function ExecutionFeed() {
 
       {/* Table */}
       <div className="border-t border-tipalti-border">
-        <div className="grid grid-cols-[96px_2fr_64px_120px_140px_28px_32px] gap-4 px-4 py-3 border-b border-tipalti-border">
-          {["Time", "Item", "Duration", "Confidence", "Override"].map((col) => (
+        <div className="grid grid-cols-[96px_2fr_64px_220px_170px_56px_32px] gap-4 px-4 py-3 border-b border-tipalti-border">
+          {["Time", "Item", "Duration", "Review reason", "Status", "Credits"].map((col) => (
             <button key={col} className="flex items-center text-sm font-semibold text-tipalti-text-primary text-left hover:text-tipalti-blue transition-colors group">
               {col}
               <SortIcon />
             </button>
           ))}
-          <div />
           <div />
         </div>
 
@@ -435,7 +426,7 @@ export default function ExecutionFeed() {
           filtered.map((task) => (
             <div
               key={task.id}
-              className="grid grid-cols-[96px_2fr_64px_120px_140px_28px_32px] gap-4 px-4 py-3.5 border-b border-tipalti-border hover:bg-[#FAFBFF] transition-colors group items-center cursor-pointer"
+              className="grid grid-cols-[96px_2fr_64px_220px_170px_56px_32px] gap-4 px-4 py-3.5 border-b border-tipalti-border hover:bg-[#FAFBFF] transition-colors group items-center cursor-pointer"
               onClick={() => router.push(`/work-items/${task.id}`)}
             >
               <div>
@@ -445,16 +436,18 @@ export default function ExecutionFeed() {
 
               <div className="min-w-0">
                 <p className="text-sm font-medium text-tipalti-text-primary truncate group-hover:text-tipalti-blue transition-colors">
-                  {task.vendor} - {formatAmount(task.amount)}
+                  {task.vendor}
                 </p>
-                <p className="text-[11px] text-tipalti-text-muted font-mono">{task.invoiceNumber}</p>
+                <p className="text-[11px] text-tipalti-text-muted mt-0.5">
+                  {formatInvoiceDate(task.date)} · {task.currency} {formatAmount(task.amount)}
+                </p>
               </div>
 
               <span className="text-sm text-tipalti-text-secondary font-mono">{task.processingDuration}</span>
 
-              <ConfidenceCell stats={task.fieldStats} />
-              <OverrideCell override={task.userOverride} />
-              <FlagCell task={task} />
+              <HumanReviewCell reasons={task.humanReviewReason} />
+              <StatusCell task={task} />
+              <span className="text-[13px] text-tipalti-text-secondary">{task.credits}</span>
 
               {/* 3-dot menu */}
               <div

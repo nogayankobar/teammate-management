@@ -365,29 +365,25 @@ function TypeIcon({ type }: { type: TaskType }) {
   }
 }
 
-function ConfidencePill({ stats }: { stats: FieldStats }) {
-  const pct = Math.round((stats.confident / stats.total) * 100);
-  const cls = pct === 100
-    ? "bg-tipalti-success-bg text-tipalti-success"
-    : pct >= 80
-    ? "bg-blue-50 text-tipalti-blue"
-    : "bg-tipalti-warning-bg text-tipalti-warning";
-  return (
-    <span className={`inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full ${cls}`}>
-      {pct}% · {stats.confident}/{stats.total} fields
-    </span>
-  );
+
+function getDetailStatus(task: Task): { label: string; cls: string } {
+  if (task.status === "in_progress") return { label: "In progress",           cls: "bg-gray-100 text-gray-500" };
+  if (task.status === "error")       return { label: "Error",                 cls: "bg-red-50 text-red-600" };
+  if (task.status === "abandoned")   return { label: "Abandoned",             cls: "bg-gray-100 text-gray-500" };
+  if (task.status === "flagged" || task.status === "pending_review")
+                                     return { label: "Awaiting human review", cls: "bg-tipalti-warning-bg text-tipalti-warning" };
+  if (typeof task.userOverride === "number" && task.userOverride > 0)
+                                     return { label: "Approved with changes", cls: "bg-blue-50 text-tipalti-blue" };
+  if (task.status === "auto_approved")
+                                     return { label: "Auto approved",         cls: "bg-tipalti-success-bg text-tipalti-success" };
+  return                                    { label: "Approved w/o changes",  cls: "bg-tipalti-success-bg text-tipalti-success" };
 }
 
-function OverridePill({ override }: { override: Task["userOverride"] }) {
-  const base = "inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full";
-  if (override === "none")
-    return <span className={`${base} bg-tipalti-success-bg text-tipalti-success`}>Submitted with no overrides</span>;
-  if (override === "pending")
-    return <span className={`${base} bg-gray-100 text-gray-500`}>Not yet reviewed</span>;
+function StatusPill({ task }: { task: Task }) {
+  const { label, cls } = getDetailStatus(task);
   return (
-    <span className={`${base} bg-tipalti-warning-bg text-tipalti-warning`}>
-      {override} override{(override as number) > 1 ? "s" : ""}
+    <span className={`inline-flex items-center text-[11px] font-medium px-2 py-0.5 rounded-full ${cls}`}>
+      {label}
     </span>
   );
 }
@@ -779,8 +775,7 @@ export default function WorkItemDetail({ task }: { task: Task }) {
             </svg>
           </button>
           <h1 className="text-[20px] font-bold text-tipalti-text-primary leading-tight">{task.vendor}</h1>
-          <ConfidencePill stats={task.fieldStats} />
-          <OverridePill override={task.userOverride} />
+          <StatusPill task={task} />
           {task.aiSummary && (
             <button
               onClick={() => setFeedbackChatOpen(true)}
