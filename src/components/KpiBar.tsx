@@ -145,7 +145,7 @@ export default function KpiBar() {
         <KpiCard
           label="Avg review time"
           value="13h"
-          sub="24h across all items"
+          sub="24h for all"
           delta="-7.3%"
           deltaPositive
           deltaDown
