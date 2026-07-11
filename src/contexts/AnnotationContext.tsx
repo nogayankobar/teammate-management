@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
 interface AnnotationContextValue {
   annotationMode: boolean;
@@ -15,6 +15,16 @@ const AnnotationContext = createContext<AnnotationContextValue>({
 export function AnnotationProvider({ children }: { children: ReactNode }) {
   const [annotationMode, setAnnotationMode] = useState(false);
   const toggle = () => setAnnotationMode((prev) => !prev);
+
+  useEffect(() => {
+    if (!annotationMode) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setAnnotationMode(false);
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [annotationMode]);
+
   return (
     <AnnotationContext.Provider value={{ annotationMode, toggle }}>
       {children}

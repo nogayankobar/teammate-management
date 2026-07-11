@@ -58,6 +58,7 @@ export interface Task {
   assignedTo?: string;
   feedbackFields?: FeedbackField[];
   humanReviewReason?: string[];
+  outcomeReasons?: { reason: string; explanation: string }[];
   credits: number;
   log: LogEntry[];
 }
@@ -154,6 +155,10 @@ export const tasks: Task[] = [
     processedAt: "2026-07-11T14:23:00",
     processingDuration: "2m 18s",
     humanReviewReason: ["Anomaly detected", "By policy"],
+    outcomeReasons: [
+      { reason: "Anomaly detected", explanation: "This AWS invoice is $24,850 — up 38% from last month's $17,980. Exceeds the 20% MoM threshold in your instructions, so I stopped and flagged it for you." },
+      { reason: "By policy", explanation: "Your instructions require escalation for any invoice more than 20% above the prior month. This rule applied regardless of how well everything else checked out." },
+    ],
     credits: 14,
     actionLabel: "Flagged for review",
     fieldStats: { total: 19, confident: 18, escalated: 1 },
@@ -204,6 +209,10 @@ export const tasks: Task[] = [
     processedAt: "2026-07-10T11:47:00",
     processingDuration: "58s",
     humanReviewReason: ["Missing information", "By policy"],
+    outcomeReasons: [
+      { reason: "Missing information", explanation: "The PO number field in this invoice is blank. I can't match it to an approved purchase order, which is required before I can process." },
+      { reason: "By policy", explanation: "Your policy requires human sign-off before any first payment to a new vendor. Acme Software Ltd. has no prior record in Tipalti — I couldn't proceed without your approval." },
+    ],
     credits: 5,
     actionLabel: "Flagged for review",
     fieldStats: { total: 10, confident: 4, escalated: 2 },
@@ -238,6 +247,9 @@ export const tasks: Task[] = [
     processedAt: "2026-07-10T09:15:00",
     processingDuration: "1m 12s",
     humanReviewReason: ["Conflict"],
+    outcomeReasons: [
+      { reason: "Conflict", explanation: "Two routing instructions both matched this invoice — 'Design tools → VP Design' (confidence 0.82) and 'Software > $3,000 → VP Engineering' (confidence 0.79). The gap was too close to auto-resolve, so I asked for clarification." },
+    ],
     credits: 8,
     actionLabel: "Routed to VP Design",
     fieldStats: { total: 10, confident: 10, escalated: 0 },
@@ -278,6 +290,9 @@ export const tasks: Task[] = [
     processedAt: "2026-07-09T16:02:00",
     processingDuration: "45s",
     humanReviewReason: ["By policy"],
+    outcomeReasons: [
+      { reason: "By policy", explanation: "Your instructions route all Figma invoices to VP Design (Sarah Chen) for approval. I've sent it her way and I'm waiting on her sign-off." },
+    ],
     credits: 4,
     actionLabel: "Pending review",
     fieldStats: { total: 10, confident: 10, escalated: 0 },
@@ -400,6 +415,9 @@ export const tasks: Task[] = [
     processedAt: "2026-07-07T13:20:00",
     processingDuration: "38s",
     humanReviewReason: ["Low confidence"],
+    outcomeReasons: [
+      { reason: "Low confidence", explanation: "I wasn't fully confident on the project code — there are multiple open Q3 projects and I don't have a clear rule for which one HubSpot fees belong to. I used Growth Q3 2024 as my best guess and flagged it for you to confirm." },
+    ],
     credits: 3,
     actionLabel: "Auto-approved",
     fieldStats: { total: 9, confident: 9, escalated: 0 },
@@ -442,6 +460,9 @@ export const tasks: Task[] = [
     processedAt: "2026-07-07T15:44:00",
     processingDuration: "52s",
     humanReviewReason: ["By policy"],
+    outcomeReasons: [
+      { reason: "By policy", explanation: "Annual renewal invoices above $8,000 require human review per your policy. I routed it for sign-off — it was reviewed and approved with no changes." },
+    ],
     credits: 5,
     actionLabel: "Approved",
     fieldStats: { total: 9, confident: 9, escalated: 0 },
@@ -480,6 +501,9 @@ export const tasks: Task[] = [
     processedAt: "2026-07-08T11:05:00",
     processingDuration: "44s",
     humanReviewReason: ["Low confidence"],
+    outcomeReasons: [
+      { reason: "Low confidence", explanation: "I wasn't fully confident on department and cost center — Notion is a cross-team tool and the primary owner may have shifted since last year. I went with Engineering based on prior invoices, but both fields were corrected after review." },
+    ],
     credits: 4,
     actionLabel: "Approved",
     fieldStats: { total: 7, confident: 5, escalated: 2 },
@@ -518,6 +542,9 @@ export const tasks: Task[] = [
     processedAt: "2026-07-09T14:18:00",
     processingDuration: "1m 02s",
     humanReviewReason: ["Low confidence"],
+    outcomeReasons: [
+      { reason: "Low confidence", explanation: "I wasn't confident on project code, AP account, or location. Stripe fees are split across products and I don't have a clear rule for how to attribute them this cycle. Three fields were corrected after review." },
+    ],
     credits: 7,
     actionLabel: "Approved",
     fieldStats: { total: 8, confident: 5, escalated: 3 },
@@ -562,6 +589,10 @@ export const tasks: Task[] = [
     processedAt: "2026-07-08T10:22:00",
     processingDuration: "1m 35s",
     humanReviewReason: ["Low confidence", "Conflict"],
+    outcomeReasons: [
+      { reason: "Low confidence", explanation: "I wasn't fully confident in the GL account for this invoice. Two of the three line items are conference and marketing spend, which pulled me away from the vendor's historical account. I made my best call but I want you to confirm." },
+      { reason: "Conflict", explanation: "Prime Ltd.'s prior invoices all map to 110365 – Suppliers, but the line item content (Marketing Summit registration, conference booth materials) points to 110358 – Marketing. Both signals are valid and I couldn't auto-resolve them." },
+    ],
     credits: 9,
     actionLabel: "Flagged for review",
     fieldStats: { total: 8, confident: 7, escalated: 1 },

@@ -36,9 +36,10 @@ export function AnnotationZone({
       {children}
       {annotationMode && hovered && (
         <div
-          className={`absolute inset-0 z-30 flex flex-col items-center gap-1
+          className={`absolute inset-x-0 top-0 z-30 flex flex-col items-center gap-1
             bg-white/90 border-2 border-dashed border-gray-400 pointer-events-none ${rounded}
             ${labelPosition === "top" ? "justify-start pt-5" : "justify-center"}`}
+          style={{ minHeight: "max(100%, 80px)" }}
         >
           <span className="text-black text-[13px] font-bold tracking-wide">{label}</span>
           {description && (

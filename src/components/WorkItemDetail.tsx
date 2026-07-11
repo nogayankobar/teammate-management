@@ -3,7 +3,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { Task, TaskType, FieldStats, LogEntry, FeedbackField } from "@/data/mockData";
+import { Task, TaskType, LogEntry, FeedbackField } from "@/data/mockData";
+import { AnnotationProvider, useAnnotation } from "@/contexts/AnnotationContext";
+import { AnnotationZone } from "@/components/AnnotationZone";
 
 // ─── Portal ───────────────────────────────────────────────────────────────────
 
@@ -12,6 +14,28 @@ function Portal({ children }: { children: React.ReactNode }) {
   useEffect(() => setMounted(true), []);
   if (!mounted) return null;
   return createPortal(children, document.body);
+}
+
+// ─── Annotation toggle ────────────────────────────────────────────────────────
+
+function AnnotationToggle() {
+  const { annotationMode, toggle } = useAnnotation();
+  return (
+    <button
+      onClick={toggle}
+      className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2 rounded-full text-[12px] font-semibold shadow-lg border transition-all ${
+        annotationMode
+          ? "bg-gray-800 text-white border-gray-600"
+          : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+      }`}
+    >
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <rect x="1" y="1" width="10" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.3" strokeDasharray="2.5 1.5" />
+        <circle cx="6" cy="6" r="1.5" fill="currentColor" />
+      </svg>
+      {annotationMode ? "Exit annotation mode" : "Annotation mode"}
+    </button>
+  );
 }
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
@@ -455,29 +479,50 @@ function OverrideRow({ override }: { override: Task["userOverride"] }) {
   );
 }
 
-function FieldCoding({ stats }: { stats: FieldStats }) {
-  const allConfident = stats.confident === stats.total && stats.escalated === 0;
-  const pct = Math.round((stats.confident / stats.total) * 100);
+function OutcomeCard({ task }: { task: Task }) {
+  const reasons = task.outcomeReasons;
+  if (!reasons || reasons.length === 0) return null;
+
   return (
-    <div>
-      <div className="flex items-baseline justify-between mb-1.5">
-        <span className="text-[11px] font-semibold text-tipalti-text-muted uppercase tracking-wide">Confidence</span>
-        <span className={`text-[12px] font-semibold ml-3 flex-shrink-0 ${allConfident ? "text-tipalti-success" : stats.escalated > 0 ? "text-tipalti-warning" : "text-tipalti-blue"}`}>{pct}%</span>
+    <div className="bg-white rounded-lg border border-tipalti-border shadow-card overflow-hidden">
+      <div className="px-4 py-2.5 border-b border-tipalti-border bg-tipalti-bg-light flex items-center gap-1.5">
+        <DiamondIcon size={9} />
+        <p className="text-[11px] font-semibold text-tipalti-text-muted uppercase tracking-wide">Outcome</p>
       </div>
-      <div className="h-1.5 bg-tipalti-bg-light rounded-full overflow-hidden mb-1">
-        <div
-          className={`h-full rounded-full ${allConfident ? "bg-tipalti-success" : stats.escalated > 0 ? "bg-tipalti-warning" : "bg-tipalti-blue"}`}
-          style={{ width: `${pct}%` }}
-        />
+      <div className="px-4 py-3 space-y-3">
+        {task.fieldStats.total > 0 && (() => {
+          const { confident, total } = task.fieldStats;
+          const pct = Math.round((confident / total) * 100);
+          const barColor = pct === 100 ? "bg-tipalti-success" : pct >= 80 ? "bg-tipalti-blue" : "bg-tipalti-warning";
+          const textColor = pct === 100 ? "text-tipalti-success" : pct >= 80 ? "text-tipalti-blue" : "text-tipalti-warning";
+          return (
+            <AnnotationZone label="Consumer" description="Consumer selects how accuracy is expressed (confidence bar, score, thumbs, etc.)." rounded="rounded">
+            <div className="pb-1">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[12px] text-tipalti-text-muted">{confident}/{total} fields coded confidently</span>
+                <span className={`text-[12px] font-semibold ${textColor}`}>{pct}%</span>
+              </div>
+              <div className="h-1.5 bg-tipalti-border rounded-full overflow-hidden">
+                <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
+              </div>
+            </div>
+            </AnnotationZone>
+          );
+        })()}
+        <AnnotationZone label="Fixed" description="Platform generates review reasons and explanations. Format is fixed. Consumer can hide the Outcome card." rounded="rounded-lg" className="space-y-3">
+          {reasons.map((r) => (
+            <div key={r.reason} className="flex items-start gap-2">
+              <div className="mt-2 flex-shrink-0">
+                <DiamondIcon size={10} />
+              </div>
+              <div className="flex-1 min-w-0 bg-indigo-50 rounded-xl rounded-tl-none px-3 py-2.5">
+                <p className="text-[12px] font-semibold text-tipalti-text-primary leading-snug">{r.reason}</p>
+                <p className="text-[12px] text-tipalti-text-secondary leading-relaxed mt-1">{r.explanation}</p>
+              </div>
+            </div>
+          ))}
+        </AnnotationZone>
       </div>
-      {allConfident ? (
-        <p className="text-[11px] text-tipalti-text-muted">All {stats.total} fields processed confidently</p>
-      ) : (
-        <p className="text-[11px] text-tipalti-text-muted">
-          {stats.confident}/{stats.total} fields
-          {stats.escalated > 0 && <span className="text-tipalti-danger"> · {stats.escalated} raised for review</span>}
-        </p>
-      )}
     </div>
   );
 }
@@ -501,6 +546,7 @@ function FeedbackCard({ override, fields, onOpenFeedback }: {
           Update instructions
         </button>
       </div>
+      <AnnotationZone label="Consumer" description="Consumer decides whether to show this card." rounded="rounded-b-lg">
       <div className="px-4 py-3 space-y-2">
         {override === "none" && (
           <div className="flex items-center gap-2">
@@ -527,20 +573,81 @@ function FeedbackCard({ override, fields, onOpenFeedback }: {
           </div>
         )}
       </div>
+      </AnnotationZone>
     </div>
   );
 }
 
 // ─── Left column ──────────────────────────────────────────────────────────────
 
-function InvoicePanel({ task, onOpenFeedback }: { task: Task; onOpenFeedback: () => void }) {
+function InvoiceDocument({ task }: { task: Task }) {
   const fmt = (n: number) => n.toLocaleString("en-US", { minimumFractionDigits: 2 });
   const fmtDate = (d: string) =>
     new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 
   return (
+    <div className="bg-white w-full shadow-md" style={{ fontFamily: "Georgia, serif" }}>
+      <div className="bg-[#0B1A2E] px-4 py-3">
+        <div className="text-white font-bold text-[13px] tracking-wide">{task.vendor.toUpperCase()}</div>
+        <div className="text-[#8FA3BB] text-[8px] mt-0.5 tracking-wider">INVOICE</div>
+      </div>
+      <div className="flex justify-between px-4 py-2 border-b border-gray-100 bg-gray-50">
+        <div>
+          <div className="text-[8px] text-gray-400 uppercase tracking-wider mb-0.5">Invoice #</div>
+          <div className="text-[10px] font-semibold text-gray-800 font-mono">{task.invoiceNumber}</div>
+        </div>
+        <div className="text-right">
+          <div className="text-[8px] text-gray-400 uppercase tracking-wider mb-0.5">Date</div>
+          <div className="text-[10px] text-gray-700">{fmtDate(task.date)}</div>
+        </div>
+      </div>
+      <div className="px-4 py-2 border-b border-gray-100">
+        <div className="text-[8px] text-gray-400 uppercase tracking-wider mb-1">Bill to</div>
+        <div className="text-[9px] text-gray-700 leading-relaxed">
+          Tipalti Inc. · 1810 Gateway Dr, San Mateo CA 94404
+        </div>
+      </div>
+      <div className="px-4 py-3">
+        <table className="w-full" style={{ borderCollapse: "collapse" }}>
+          <thead>
+            <tr>
+              <th className="text-[7px] text-gray-400 uppercase tracking-wider text-left pb-1 font-normal">Description</th>
+              <th className="text-[7px] text-gray-400 uppercase tracking-wider text-right pb-1 font-normal">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {task.lineItems ? (
+              task.lineItems.map((line, i) => (
+                <tr key={i} className="border-t border-gray-100">
+                  <td className="text-[9px] text-gray-700 py-1.5 pr-2 leading-snug">{line.description}</td>
+                  <td className="text-[9px] text-gray-700 text-right py-1.5 font-mono">{task.currency === "USD" ? "$" : task.currency + " "}{fmt(line.amount)}</td>
+                </tr>
+              ))
+            ) : (
+              <tr className="border-t border-gray-100">
+                <td className="text-[9px] text-gray-700 py-1.5 pr-2 leading-snug">{task.summary.split(" — ")[0]}</td>
+                <td className="text-[9px] text-gray-700 text-right py-1.5 font-mono">${fmt(task.amount)}</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+        <div className="border-t border-gray-100 pt-1.5 mt-1 flex justify-between text-[10px] font-bold text-gray-800">
+          <span>Total</span>
+          <span className="font-mono">{task.currency} {fmt(task.amount)}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function InvoicePanel({ task, onOpenFeedback }: { task: Task; onOpenFeedback: () => void }) {
+  const [inputExpanded, setInputExpanded] = useState(false);
+  const [maximized, setMaximized] = useState(false);
+  const [zoom, setZoom] = useState(1);
+
+  return (
     <div className="flex flex-col gap-4">
-      {/* Invoice image */}
+      {/* Input card */}
       <div className="bg-white rounded-lg border border-tipalti-border shadow-card overflow-hidden">
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-tipalti-border bg-tipalti-bg-light">
           <p className="text-[11px] font-semibold text-tipalti-text-muted uppercase tracking-wide">Input</p>
@@ -551,85 +658,106 @@ function InvoicePanel({ task, onOpenFeedback }: { task: Task; onOpenFeedback: ()
             </svg>
           </a>
         </div>
-        <div className="bg-[#E8EAED] px-4 py-4 flex justify-center">
-          <div className="bg-white w-full shadow-md" style={{ fontFamily: "Georgia, serif" }}>
-            <div className="bg-[#0B1A2E] px-4 py-3">
-              <div className="text-white font-bold text-[13px] tracking-wide">{task.vendor.toUpperCase()}</div>
-              <div className="text-[#8FA3BB] text-[8px] mt-0.5 tracking-wider">INVOICE</div>
+        <AnnotationZone label="Consumer" description="Consumer selects which artifact component to display here (document, structured data, free text)." rounded="rounded-b-lg">
+
+        {/* File type row — click to expand */}
+        <div
+          className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors select-none"
+          onClick={() => setInputExpanded((v) => !v)}
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded bg-tipalti-bg-light border border-tipalti-border flex items-center justify-center flex-shrink-0">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <rect x="2" y="1" width="8" height="12" rx="1" stroke="#5E6C84" strokeWidth="1.2" />
+                <path d="M8 1v3h3" stroke="#5E6C84" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M4 7h6M4 9.5h4" stroke="#5E6C84" strokeWidth="1.1" strokeLinecap="round" />
+              </svg>
             </div>
-            <div className="flex justify-between px-4 py-2 border-b border-gray-100 bg-gray-50">
-              <div>
-                <div className="text-[8px] text-gray-400 uppercase tracking-wider mb-0.5">Invoice #</div>
-                <div className="text-[10px] font-semibold text-gray-800 font-mono">{task.invoiceNumber}</div>
-              </div>
-              <div className="text-right">
-                <div className="text-[8px] text-gray-400 uppercase tracking-wider mb-0.5">Date</div>
-                <div className="text-[10px] text-gray-700">{fmtDate(task.date)}</div>
-              </div>
-            </div>
-            <div className="px-4 py-2 border-b border-gray-100">
-              <div className="text-[8px] text-gray-400 uppercase tracking-wider mb-1">Bill to</div>
-              <div className="text-[9px] text-gray-700 leading-relaxed">
-                Tipalti Inc. · 1810 Gateway Dr, San Mateo CA 94404
-              </div>
-            </div>
-            <div className="px-4 py-3">
-              <table className="w-full" style={{ borderCollapse: "collapse" }}>
-                <thead>
-                  <tr>
-                    <th className="text-[7px] text-gray-400 uppercase tracking-wider text-left pb-1 font-normal">Description</th>
-                    <th className="text-[7px] text-gray-400 uppercase tracking-wider text-right pb-1 font-normal">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {task.lineItems ? (
-                    task.lineItems.map((line, i) => (
-                      <tr key={i} className="border-t border-gray-100">
-                        <td className="text-[9px] text-gray-700 py-1.5 pr-2 leading-snug">{line.description}</td>
-                        <td className="text-[9px] text-gray-700 text-right py-1.5 font-mono">{task.currency === "USD" ? "$" : task.currency + " "}{fmt(line.amount)}</td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr className="border-t border-gray-100">
-                      <td className="text-[9px] text-gray-700 py-1.5 pr-2 leading-snug">{task.summary.split(" — ")[0]}</td>
-                      <td className="text-[9px] text-gray-700 text-right py-1.5 font-mono">${fmt(task.amount)}</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-              <div className="border-t border-gray-100 pt-1.5 mt-1 flex justify-between text-[10px] font-bold text-gray-800">
-                <span>Total</span>
-                <span className="font-mono">{task.currency} {fmt(task.amount)}</span>
-              </div>
+            <div>
+              <p className="text-[12px] font-medium text-tipalti-text-primary">Invoice</p>
+              <p className="text-[11px] text-tipalti-text-muted font-mono">{task.invoiceNumber}</p>
             </div>
           </div>
+          <div className="flex items-center gap-1.5">
+            {inputExpanded && (
+              <button
+                onClick={(e) => { e.stopPropagation(); setMaximized(true); }}
+                className="p-1 text-tipalti-text-muted hover:text-tipalti-text-primary transition-colors"
+                title="Maximize"
+              >
+                <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.3">
+                  <path d="M1 5V1h4M9 1h4v4M13 9v4H9M5 13H1V9" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            )}
+            <svg
+              width="14" height="14" viewBox="0 0 14 14" fill="none"
+              className={`text-tipalti-text-muted transition-transform ${inputExpanded ? "rotate-180" : ""}`}
+            >
+              <path d="M3 5l4 4 4-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
         </div>
+
+        {/* Expanded: full document */}
+        {inputExpanded && (
+          <div className="border-t border-tipalti-border bg-[#E8EAED] px-4 py-4 flex justify-center">
+            <InvoiceDocument task={task} />
+          </div>
+        )}
+        </AnnotationZone>
       </div>
 
-      {/* Outcome */}
-      <div className="bg-white rounded-lg border border-tipalti-border shadow-card overflow-hidden">
-        <div className="px-4 py-2.5 border-b border-tipalti-border bg-tipalti-bg-light">
-          <p className="text-[11px] font-semibold text-tipalti-text-muted uppercase tracking-wide">Outcome</p>
-        </div>
-        <div className="px-4 py-3 space-y-3">
-          {task.status === "flagged" && task.issue && (
-            <div className="bg-tipalti-danger-bg border border-red-100 rounded-lg px-3 py-2.5">
-              <div className="flex items-center gap-1.5 mb-1">
-                <svg width="11" height="11" viewBox="0 0 14 14" fill="none" className="text-tipalti-danger flex-shrink-0" style={{ color: "#FF5630" }}>
-                  <path d="M3 1.5V13M3 1.5h7l-2 3.5 2 3.5H3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                <p className="text-[11px] font-semibold text-tipalti-danger">Flagged by AP Specialist</p>
-              </div>
-              <p className="text-[11px] text-tipalti-text-primary leading-relaxed">{task.issue}</p>
-            </div>
-          )}
-          <FieldCoding stats={task.fieldStats} />
-        </div>
-      </div>
+      <OutcomeCard task={task} />
 
       {/* Feedback */}
       <FeedbackCard override={task.userOverride} fields={task.feedbackFields} onOpenFeedback={onOpenFeedback} />
 
+      {/* Maximize modal */}
+      {maximized && (
+        <Portal>
+          <div
+            className="fixed inset-0 bg-black/60 z-50 flex items-start justify-center pt-8 pb-8 px-8"
+            onClick={(e) => { if (e.target === e.currentTarget) { setMaximized(false); setZoom(1); } }}
+          >
+            <div className="bg-white rounded-xl shadow-2xl flex flex-col w-full max-w-2xl" style={{ maxHeight: "90vh" }}>
+              {/* Toolbar */}
+              <div className="flex items-center justify-between px-4 py-2.5 border-b border-tipalti-border flex-shrink-0">
+                <span className="text-[12px] font-semibold text-tipalti-text-primary">{task.invoiceNumber}</span>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-0.5 border border-tipalti-border rounded-md px-1 py-0.5">
+                    <button
+                      onClick={() => setZoom((z) => Math.max(0.5, Math.round((z - 0.25) * 100) / 100))}
+                      disabled={zoom <= 0.5}
+                      className="w-6 h-6 flex items-center justify-center text-[16px] text-tipalti-text-muted hover:text-tipalti-text-primary disabled:opacity-30 transition-colors leading-none"
+                    >−</button>
+                    <span className="text-[11px] text-tipalti-text-muted w-9 text-center tabular-nums">{Math.round(zoom * 100)}%</span>
+                    <button
+                      onClick={() => setZoom((z) => Math.min(3, Math.round((z + 0.25) * 100) / 100))}
+                      disabled={zoom >= 3}
+                      className="w-6 h-6 flex items-center justify-center text-[16px] text-tipalti-text-muted hover:text-tipalti-text-primary disabled:opacity-30 transition-colors leading-none"
+                    >+</button>
+                  </div>
+                  <button
+                    onClick={() => { setMaximized(false); setZoom(1); }}
+                    className="p-1 text-tipalti-text-muted hover:text-tipalti-text-primary transition-colors"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M3 3l8 8M11 3l-8 8" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              {/* Scrollable content with zoom */}
+              <div className="flex-1 overflow-auto bg-[#E8EAED] p-6" style={{ minHeight: 0 }}>
+                <div style={{ zoom: zoom }}>
+                  <InvoiceDocument task={task} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </Portal>
+      )}
     </div>
   );
 }
@@ -751,7 +879,6 @@ function ReasoningLog({ task }: { task: Task }) {
 export default function WorkItemDetail({ task }: { task: Task }) {
   const router = useRouter();
   const [feedbackChatOpen, setFeedbackChatOpen] = useState(false);
-  const [summaryExpanded, setSummaryExpanded] = useState(false);
 
   const formatProcessedDate = (dt: string) =>
     new Date(dt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -760,8 +887,10 @@ export default function WorkItemDetail({ task }: { task: Task }) {
     new Date(dt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
 
   return (
+    <AnnotationProvider>
     <div className="flex flex-col h-full overflow-hidden">
       {/* Page header */}
+      <AnnotationZone label="Fixed" description="Platform computes all header metadata: item title, status, date, time, duration, and credits." rounded="rounded-none" labelPosition="top">
       <div className="px-6 pt-3 pb-2.5 border-b border-tipalti-border bg-white flex-shrink-0">
         {/* Vendor name row: arrow + name + pills + open in bills */}
         <div className="flex items-center gap-2 mb-1">
@@ -774,7 +903,9 @@ export default function WorkItemDetail({ task }: { task: Task }) {
               <path d="M9 11.5L4.5 7 9 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
-          <h1 className="text-[20px] font-bold text-tipalti-text-primary leading-tight">{task.vendor}</h1>
+          <h1 className="text-[20px] font-bold text-tipalti-text-primary leading-tight">
+            {task.vendor} - {task.currency === "USD" ? "$" : `${task.currency} `}{task.amount.toLocaleString("en-US")}
+          </h1>
           <StatusPill task={task} />
           {task.aiSummary && (
             <button
@@ -788,35 +919,16 @@ export default function WorkItemDetail({ task }: { task: Task }) {
         </div>
         {/* Subtitle */}
         <div className="flex items-center pl-7 text-[12px] text-tipalti-text-muted">
-          <span className="font-mono font-medium text-tipalti-text-secondary">{task.invoiceNumber}</span>
-          <span className="mx-2 select-none">·</span>
           <span>{formatProcessedDate(task.processedAt)}</span>
-          <span className="mx-2 select-none">·</span>
+          <span className="mx-1.5 select-none">·</span>
           <span>{formatProcessedTime(task.processedAt)}</span>
-          <span className="mx-2 select-none">·</span>
-          <span className="font-mono">{task.processingDuration}</span>
+          <span className="mx-1.5 select-none">·</span>
+          <span>{task.processingDuration}</span>
+          <span className="mx-1.5 select-none">·</span>
+          <span>{task.credits} credits</span>
         </div>
       </div>
-
-      {/* AI Summary banner */}
-      {task.aiSummary && (
-        <div className="mx-6 mt-2.5 mb-1 rounded-lg border border-indigo-200 bg-indigo-50 flex-shrink-0">
-          <div className="flex items-start gap-2.5 px-3.5 py-2.5">
-            <div className="mt-0.5 flex-shrink-0"><DiamondIcon size={11} /></div>
-            <div className="flex-1 min-w-0">
-              <p className={`text-[12px] text-tipalti-text-primary leading-relaxed ${summaryExpanded ? "" : "line-clamp-1"}`}>
-                {task.aiSummary}
-              </p>
-              <button
-                onClick={() => setSummaryExpanded((v) => !v)}
-                className="text-[11px] font-medium text-tipalti-blue hover:underline mt-0.5"
-              >
-                {summaryExpanded ? "Show less" : "Show more"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      </AnnotationZone>
 
       {/* Two-column body */}
       <div className="flex-1 overflow-hidden grid grid-cols-[360px_1fr] gap-0">
@@ -826,9 +938,11 @@ export default function WorkItemDetail({ task }: { task: Task }) {
         </div>
 
         {/* Right: agent trace */}
-        <div className="overflow-hidden p-5">
+        <AnnotationZone label="Fixed" description="Platform owns the full trace: column layout, action type taxonomy, badge colors, truncation, and hover detail." className="overflow-hidden" rounded="rounded-none">
+        <div className="overflow-hidden p-5 h-full">
           <ReasoningLog task={task} />
         </div>
+        </AnnotationZone>
       </div>
 
       {feedbackChatOpen && (
@@ -837,5 +951,7 @@ export default function WorkItemDetail({ task }: { task: Task }) {
         </Portal>
       )}
     </div>
+    <AnnotationToggle />
+    </AnnotationProvider>
   );
 }

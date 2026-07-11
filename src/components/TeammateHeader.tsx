@@ -50,8 +50,11 @@ interface TeammateHeaderProps {
 export default function TeammateHeader({ activeTab, onTabChange }: TeammateHeaderProps) {
   return (
     <div>
-      {/* Identity row */}
-      <AnnotationZone label="Fixed" description="Agent identity. Name, avatar, domain, and job are platform-owned." rounded="rounded-lg">
+      {/* Budget + identity (single platform-owned zone) */}
+      <AnnotationZone label="Fixed" description="Agent identity and credit budget are platform-owned." rounded="rounded-lg">
+      <div className="flex justify-end mb-3">
+        <BudgetWidget />
+      </div>
       <div className="flex items-center gap-4 mb-5">
         <div
           className="w-11 h-11 rounded-xl flex items-center justify-center shadow-card flex-shrink-0"
