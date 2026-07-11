@@ -114,7 +114,7 @@ export default function KpiBar() {
           label="Processed"
           value={`${processed}`}
           sub={`of ${total} items`}
-          delta="+3 items"
+          delta="+3"
           deltaPositive
           sparkPoints={[3, 5, 8, 10, 11, 13, processed]}
           sparkColor="#0065FF"
