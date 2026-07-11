@@ -408,6 +408,7 @@ export default function ExecutionFeed() {
       </div>
 
       {/* Table */}
+      <AnnotationZone label="Fixed" description="All columns are platform-defined. Structure, layout, and data schema are platform-owned." rounded="rounded-none">
       <div className="border-t border-tipalti-border">
         <div className="grid grid-cols-[96px_2fr_64px_220px_170px_56px_32px] gap-4 px-4 py-3 border-b border-tipalti-border">
           {["Time", "Item", "Duration", "Review reason", "Status", "Credits"].map((col) => (
@@ -435,25 +436,19 @@ export default function ExecutionFeed() {
                 <p className="text-[11px] text-tipalti-text-muted">{formatProcessed(task.processedAt).time}</p>
               </div>
 
-              <AnnotationZone
-                label="Fixed"
-                description="Title (required field) · Subtitle (optional field)"
-                className="min-w-0"
-              >
+              <div className="min-w-0">
                 <p className="text-sm font-medium text-tipalti-text-primary truncate group-hover:text-tipalti-blue transition-colors">
                   {task.vendor}
                 </p>
                 <p className="text-[11px] text-tipalti-text-muted mt-0.5">
                   {formatInvoiceDate(task.date)} · {task.currency} {formatAmount(task.amount)}
                 </p>
-              </AnnotationZone>
+              </div>
 
               <span className="text-sm text-tipalti-text-secondary font-mono">{task.processingDuration}</span>
 
               <HumanReviewCell reasons={task.humanReviewReason} />
-              <AnnotationZone label="Fixed">
-                <StatusCell task={task} />
-              </AnnotationZone>
+              <StatusCell task={task} />
               <span className="text-[13px] text-tipalti-text-secondary">{task.credits}</span>
 
               {/* 3-dot menu */}
@@ -483,6 +478,7 @@ export default function ExecutionFeed() {
           ))
         )}
       </div>
+      </AnnotationZone>
 
       {/* Pagination */}
       <div className="flex items-center justify-between pt-4">

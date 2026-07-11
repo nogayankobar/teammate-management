@@ -21,16 +21,18 @@ export function AnnotationZone({
   const { annotationMode } = useAnnotation();
   const [hovered, setHovered] = useState(false);
 
-  if (!annotationMode) return <>{children}</>;
-
   return (
     <div
       className={`relative ${className}`}
-      onMouseEnter={(e) => { e.stopPropagation(); setHovered(true); }}
+      onMouseEnter={(e) => {
+        if (!annotationMode) return;
+        e.stopPropagation();
+        setHovered(true);
+      }}
       onMouseLeave={() => setHovered(false)}
     >
       {children}
-      {hovered && (
+      {annotationMode && hovered && (
         <div
           className={`absolute inset-0 z-30 flex flex-col items-center justify-center gap-1
             bg-white/90 border-2 border-dashed border-gray-400 pointer-events-none ${rounded}`}

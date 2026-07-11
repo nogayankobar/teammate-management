@@ -108,39 +108,40 @@ export default function KpiBar() {
   const { total, processed, accuracyRate, automationRate } = computeKpis();
 
   return (
-    <AnnotationZone
-      label="Fixed"
-      description="Platform-provided KPIs. Design, structure, and calculation are platform-owned."
-      rounded="rounded-xl"
-    >
     <div className="bg-white border border-tipalti-border rounded-xl shadow-card flex divide-x divide-tipalti-border overflow-hidden">
-      <KpiCard
-        label="Processed"
-        value={`${processed}`}
-        sub={`of ${total} items`}
-        delta="+3 items"
-        deltaPositive
-        sparkPoints={[3, 5, 8, 10, 11, 13, processed]}
-        sparkColor="#0065FF"
-      />
-      <KpiCard
-        label="Accuracy rate"
-        value={`${accuracyRate}%`}
-        sub="field-weighted"
-        delta="+7pp"
-        deltaPositive
-        sparkPoints={[58, 61, 65, 67, 64, 68, accuracyRate]}
-        sparkColor="#36B37E"
-      />
-      <KpiCard
-        label="Automation rate"
-        value={`${automationRate}%`}
-        sub="no human touch"
-        delta="+3pp"
-        deltaPositive
-        sparkPoints={[7, 8, 9, 10, 11, 12, automationRate]}
-        sparkColor="#6554C0"
-      />
+      <AnnotationZone label="Fixed" description="Platform-provided KPI. Design, structure, and calculation are platform-owned." className="flex-1" rounded="rounded-none">
+        <KpiCard
+          label="Processed"
+          value={`${processed}`}
+          sub={`of ${total} items`}
+          delta="+3 items"
+          deltaPositive
+          sparkPoints={[3, 5, 8, 10, 11, 13, processed]}
+          sparkColor="#0065FF"
+        />
+      </AnnotationZone>
+      <AnnotationZone label="Fixed" description="Platform-provided KPI. Design, structure, and calculation are platform-owned." className="flex-1" rounded="rounded-none">
+        <KpiCard
+          label="Accuracy rate"
+          value={`${accuracyRate}%`}
+          sub="field-weighted"
+          delta="+7pp"
+          deltaPositive
+          sparkPoints={[58, 61, 65, 67, 64, 68, accuracyRate]}
+          sparkColor="#36B37E"
+        />
+      </AnnotationZone>
+      <AnnotationZone label="Fixed" description="Platform-provided KPI. Design, structure, and calculation are platform-owned." className="flex-1" rounded="rounded-none">
+        <KpiCard
+          label="Automation rate"
+          value={`${automationRate}%`}
+          sub="no human touch"
+          delta="+3pp"
+          deltaPositive
+          sparkPoints={[7, 8, 9, 10, 11, 12, automationRate]}
+          sparkColor="#6554C0"
+        />
+      </AnnotationZone>
       <AnnotationZone label="Consumer" description="Agent-defined KPI. Label, value and formula set by the agent owner." className="flex-1" rounded="rounded-none">
         <KpiCard
           label="Avg review time"
@@ -154,6 +155,5 @@ export default function KpiBar() {
         />
       </AnnotationZone>
     </div>
-    </AnnotationZone>
   );
 }
