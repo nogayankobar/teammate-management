@@ -109,7 +109,7 @@ export default function KpiBar() {
 
   return (
     <div className="bg-white border border-tipalti-border rounded-xl shadow-card flex divide-x divide-tipalti-border overflow-hidden">
-      <AnnotationZone label="Fixed" description="Platform-provided KPI. Design, structure, and calculation are platform-owned." className="flex-1" rounded="rounded-none">
+      <AnnotationZone label="Fixed" description="Platform-provided KPI. Design, structure, and calculation are platform-owned. Consumer can show/hide." className="flex-1" rounded="rounded-none">
         <KpiCard
           label="Processed"
           value={`${processed}`}
@@ -120,7 +120,7 @@ export default function KpiBar() {
           sparkColor="#0065FF"
         />
       </AnnotationZone>
-      <AnnotationZone label="Fixed" description="Platform-provided KPI. Design, structure, and calculation are platform-owned." className="flex-1" rounded="rounded-none">
+      <AnnotationZone label="Fixed" description="Platform-provided KPI. Design, structure, and calculation are platform-owned. Consumer can show/hide." className="flex-1" rounded="rounded-none">
         <KpiCard
           label="Accuracy rate"
           value={`${accuracyRate}%`}
@@ -131,7 +131,7 @@ export default function KpiBar() {
           sparkColor="#36B37E"
         />
       </AnnotationZone>
-      <AnnotationZone label="Fixed" description="Platform-provided KPI. Design, structure, and calculation are platform-owned." className="flex-1" rounded="rounded-none">
+      <AnnotationZone label="Fixed" description="Platform-provided KPI. Design, structure, and calculation are platform-owned. Consumer can show/hide." className="flex-1" rounded="rounded-none">
         <KpiCard
           label="Automation rate"
           value={`${automationRate}%`}
