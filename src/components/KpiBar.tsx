@@ -117,7 +117,7 @@ export default function KpiBar() {
           delta="+3"
           deltaPositive
           sparkPoints={[3, 5, 8, 10, 11, 13, processed]}
-          sparkColor="#0065FF"
+          sparkColor="#C1C7D0"
         />
       </AnnotationZone>
       <AnnotationZone label="Fixed" description="Platform-provided KPI. Design, structure, and calculation are platform-owned. Consumer can show/hide." className="flex-1" rounded="rounded-none">
@@ -128,7 +128,7 @@ export default function KpiBar() {
           delta="+7pp"
           deltaPositive
           sparkPoints={[58, 61, 65, 67, 64, 68, accuracyRate]}
-          sparkColor="#36B37E"
+          sparkColor="#C1C7D0"
         />
       </AnnotationZone>
       <AnnotationZone label="Fixed" description="Platform-provided KPI. Design, structure, and calculation are platform-owned. Consumer can show/hide." className="flex-1" rounded="rounded-none">
@@ -139,7 +139,7 @@ export default function KpiBar() {
           delta="+3pp"
           deltaPositive
           sparkPoints={[7, 8, 9, 10, 11, 12, automationRate]}
-          sparkColor="#6554C0"
+          sparkColor="#C1C7D0"
         />
       </AnnotationZone>
       <AnnotationZone label="Consumer" description="Agent-defined KPI. Label, value and formula set by the agent owner." className="flex-1" rounded="rounded-none">
@@ -151,7 +151,7 @@ export default function KpiBar() {
           deltaPositive
           deltaDown
           sparkPoints={[24, 22, 20, 19, 17, 15, 13]}
-          sparkColor="#8777D9"
+          sparkColor="#C1C7D0"
         />
       </AnnotationZone>
     </div>
