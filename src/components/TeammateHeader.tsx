@@ -2,6 +2,7 @@
 
 import { teammate, tasks } from "@/data/mockData";
 import KpiBar from "@/components/KpiBar";
+import { AnnotationZone } from "@/components/AnnotationZone";
 
 type Tab = "feed" | "instructions";
 
@@ -50,6 +51,7 @@ export default function TeammateHeader({ activeTab, onTabChange }: TeammateHeade
   return (
     <div>
       {/* Identity row */}
+      <AnnotationZone label="Fixed" description="Agent identity. Name, avatar, domain, and job are platform-owned." rounded="rounded-lg">
       <div className="flex items-center gap-4 mb-5">
         <div
           className="w-11 h-11 rounded-xl flex items-center justify-center shadow-card flex-shrink-0"
@@ -64,6 +66,7 @@ export default function TeammateHeader({ activeTab, onTabChange }: TeammateHeade
           </p>
         </div>
       </div>
+      </AnnotationZone>
 
       {/* KPIs */}
       <div className="my-5">

@@ -9,6 +9,7 @@ interface AnnotationZoneProps {
   children: React.ReactNode;
   className?: string;
   rounded?: string;
+  labelPosition?: "center" | "top";
 }
 
 export function AnnotationZone({
@@ -17,6 +18,7 @@ export function AnnotationZone({
   children,
   className = "",
   rounded = "rounded",
+  labelPosition = "center",
 }: AnnotationZoneProps) {
   const { annotationMode } = useAnnotation();
   const [hovered, setHovered] = useState(false);
@@ -34,8 +36,9 @@ export function AnnotationZone({
       {children}
       {annotationMode && hovered && (
         <div
-          className={`absolute inset-0 z-30 flex flex-col items-center justify-center gap-1
-            bg-white/90 border-2 border-dashed border-gray-400 pointer-events-none ${rounded}`}
+          className={`absolute inset-0 z-30 flex flex-col items-center gap-1
+            bg-white/90 border-2 border-dashed border-gray-400 pointer-events-none ${rounded}
+            ${labelPosition === "top" ? "justify-start pt-5" : "justify-center"}`}
         >
           <span className="text-black text-[13px] font-bold tracking-wide">{label}</span>
           {description && (

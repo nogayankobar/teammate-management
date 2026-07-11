@@ -408,7 +408,7 @@ export default function ExecutionFeed() {
       </div>
 
       {/* Table */}
-      <AnnotationZone label="Fixed" description="All columns are platform-defined. Structure, layout, and data schema are platform-owned." rounded="rounded-none">
+      <AnnotationZone label="Fixed" description="All columns are platform-defined. Structure, layout, and data schema are platform-owned." rounded="rounded-none" labelPosition="top">
       <div className="border-t border-tipalti-border">
         <div className="grid grid-cols-[96px_2fr_64px_220px_170px_56px_32px] gap-4 px-4 py-3 border-b border-tipalti-border">
           {["Time", "Item", "Duration", "Review reason", "Status", "Credits"].map((col) => (

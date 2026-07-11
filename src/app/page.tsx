@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import TeammateHeader, { BudgetWidget } from "@/components/TeammateHeader";
+import { AnnotationZone } from "@/components/AnnotationZone";
 import ExecutionFeed from "@/components/ExecutionFeed";
 import Instructions from "@/components/Instructions";
 import { AnnotationProvider, useAnnotation } from "@/contexts/AnnotationContext";
@@ -345,9 +346,9 @@ export default function Home() {
         {/* Page content */}
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-[1100px] mx-auto px-6 py-6">
-            <div className="flex justify-end mb-3">
+            <AnnotationZone label="Fixed" description="Credit budget. Usage, cap, and display are platform-owned." className="flex justify-end mb-3" rounded="rounded-lg">
               <BudgetWidget />
-            </div>
+            </AnnotationZone>
             <TeammateHeader activeTab={activeTab} onTabChange={setActiveTab} />
             <div className="mt-6">
               {activeTab === "feed" && <ExecutionFeed />}
