@@ -89,7 +89,7 @@ function KpiCard({
             <span className={`text-[11px] font-medium ${deltaPositive ? "text-tipalti-success" : "text-tipalti-danger"}`}>
               {delta}
             </span>
-            <span className="text-[11px] text-tipalti-text-muted">vs last period</span>
+            <span className="text-[11px] text-tipalti-text-muted">vs last week</span>
           </div>
         </div>
         <Sparkline points={sparkPoints} color={sparkColor} />

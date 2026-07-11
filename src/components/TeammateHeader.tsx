@@ -12,7 +12,7 @@ const tabs: Array<{ id: Tab; label: string }> = [
 
 const CREDIT_BUDGET = 200;
 
-function BudgetWidget() {
+export function BudgetWidget() {
   const used = tasks.reduce((sum, t) => sum + t.credits, 0);
   const pct = used / CREDIT_BUDGET;
 
@@ -63,7 +63,6 @@ export default function TeammateHeader({ activeTab, onTabChange }: TeammateHeade
             {teammate.domain} &middot; {teammate.job}
           </p>
         </div>
-        <BudgetWidget />
       </div>
 
       {/* KPIs */}

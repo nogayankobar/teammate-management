@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
-import TeammateHeader from "@/components/TeammateHeader";
+import TeammateHeader, { BudgetWidget } from "@/components/TeammateHeader";
 import ExecutionFeed from "@/components/ExecutionFeed";
 import Instructions from "@/components/Instructions";
 
@@ -323,6 +323,9 @@ export default function Home() {
         {/* Page content */}
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-[1100px] mx-auto px-6 py-6">
+            <div className="flex justify-end mb-3">
+              <BudgetWidget />
+            </div>
             <TeammateHeader activeTab={activeTab} onTabChange={setActiveTab} />
             <div className="mt-6">
               {activeTab === "feed" && <ExecutionFeed />}

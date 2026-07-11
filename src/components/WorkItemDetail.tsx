@@ -375,7 +375,7 @@ function getDetailStatus(task: Task): { label: string; cls: string } {
   if (typeof task.userOverride === "number" && task.userOverride > 0)
                                      return { label: "Approved with changes", cls: "bg-blue-50 text-tipalti-blue" };
   if (task.status === "auto_approved")
-                                     return { label: "Auto approved",         cls: "bg-tipalti-success-bg text-tipalti-success" };
+                                     return { label: "Auto-completed",        cls: "bg-tipalti-success-bg text-tipalti-success" };
   return                                    { label: "Approved w/o changes",  cls: "bg-tipalti-success-bg text-tipalti-success" };
 }
 

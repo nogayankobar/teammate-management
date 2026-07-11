@@ -47,7 +47,7 @@ function getDisplayStatus(task: Task): { label: string; color: "green" | "amber"
     return { label: "Approved with changes", color: "blue" };
   }
   if (task.status === "auto_approved") {
-    return { label: "Auto approved", color: "green" };
+    return { label: "Auto-completed", color: "green" };
   }
   return { label: "Approved w/o changes", color: "green" };
 }
