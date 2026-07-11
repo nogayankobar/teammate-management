@@ -44,12 +44,12 @@ function getDisplayStatus(task: Task): { label: string; color: "green" | "amber"
     return { label: "Awaiting human review", color: "amber" };
   }
   if (typeof task.userOverride === "number" && task.userOverride > 0) {
-    return { label: "Approved with changes", color: "blue" };
+    return { label: "Accepted with edits", color: "blue" };
   }
   if (task.status === "auto_approved") {
     return { label: "Auto-completed", color: "green" };
   }
-  return { label: "Approved w/o changes", color: "green" };
+  return { label: "Accepted", color: "green" };
 }
 
 function StatusCell({ task }: { task: Task }) {
