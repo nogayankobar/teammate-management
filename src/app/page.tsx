@@ -5,6 +5,27 @@ import Sidebar from "@/components/Sidebar";
 import TeammateHeader, { BudgetWidget } from "@/components/TeammateHeader";
 import ExecutionFeed from "@/components/ExecutionFeed";
 import Instructions from "@/components/Instructions";
+import { AnnotationProvider, useAnnotation } from "@/contexts/AnnotationContext";
+
+function AnnotationToggle() {
+  const { annotationMode, toggle } = useAnnotation();
+  return (
+    <button
+      onClick={toggle}
+      className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2 rounded-full text-[12px] font-semibold shadow-lg border transition-all ${
+        annotationMode
+          ? "bg-gray-800 text-white border-gray-600"
+          : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+      }`}
+    >
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <rect x="1" y="1" width="10" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.3" strokeDasharray="2.5 1.5" />
+        <circle cx="6" cy="6" r="1.5" fill="currentColor" />
+      </svg>
+      {annotationMode ? "Exit annotation mode" : "Annotation mode"}
+    </button>
+  );
+}
 
 type Tab = "feed" | "instructions";
 
@@ -264,6 +285,7 @@ export default function Home() {
   };
 
   return (
+    <AnnotationProvider>
     <div className="flex h-screen overflow-hidden bg-tipalti-bg-light">
       <Sidebar />
 
@@ -350,6 +372,8 @@ export default function Home() {
           }}
         />
       )}
+      <AnnotationToggle />
     </div>
+    </AnnotationProvider>
   );
 }

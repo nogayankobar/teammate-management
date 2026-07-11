@@ -1,6 +1,7 @@
 "use client";
 
 import { tasks } from "@/data/mockData";
+import { AnnotationZone } from "@/components/AnnotationZone";
 
 // ─── Computations ─────────────────────────────────────────────────────────────
 
@@ -104,6 +105,11 @@ export default function KpiBar() {
   const { total, processed, accuracyRate, automationRate } = computeKpis();
 
   return (
+    <AnnotationZone
+      label="Fixed"
+      description="Platform-provided KPIs. Design, structure, and calculation are platform-owned."
+      rounded="rounded-xl"
+    >
     <div className="bg-white border border-tipalti-border rounded-xl shadow-card flex divide-x divide-tipalti-border overflow-hidden">
       <KpiCard
         label="Processed"
@@ -133,5 +139,6 @@ export default function KpiBar() {
         sparkColor="#6554C0"
       />
     </div>
+    </AnnotationZone>
   );
 }
