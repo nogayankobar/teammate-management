@@ -31,6 +31,21 @@ const statusConfig: Record<
     className: "bg-tipalti-success-bg text-tipalti-success",
     dot: "bg-tipalti-success",
   },
+  in_progress: {
+    label: "In progress",
+    className: "bg-gray-100 text-gray-500",
+    dot: "bg-gray-400",
+  },
+  error: {
+    label: "Error",
+    className: "bg-red-50 text-red-600",
+    dot: "bg-red-500",
+  },
+  abandoned: {
+    label: "Abandoned",
+    className: "bg-gray-100 text-gray-500",
+    dot: "bg-gray-400",
+  },
 };
 
 const typeConfig: Record<TaskType, { label: string; className: string }> = {
