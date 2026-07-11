@@ -124,7 +124,7 @@ export default function KpiBar() {
         <KpiCard
           label="Accuracy rate"
           value={`${accuracyRate}%`}
-          sub="field-weighted"
+          sub="of fields predicted correctly"
           delta="+7pp"
           deltaPositive
           sparkPoints={[58, 61, 65, 67, 64, 68, accuracyRate]}
