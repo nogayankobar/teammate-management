@@ -4,7 +4,6 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { tasks, Task } from "@/data/mockData";
-import { AnnotationZone } from "@/components/AnnotationZone";
 
 // ─── Portal ───────────────────────────────────────────────────────────────────
 
@@ -408,7 +407,6 @@ export default function ExecutionFeed() {
       </div>
 
       {/* Table */}
-      <AnnotationZone label="Fixed" description="All columns are platform-defined. Structure, layout, and data schema are platform-owned." rounded="rounded-none" labelPosition="top">
       <div className="border-t border-tipalti-border">
         <div className="grid grid-cols-[96px_2fr_64px_220px_170px_56px_32px] gap-4 px-4 py-3 border-b border-tipalti-border">
           {["Time", "Item", "Duration", "Review reason", "Status", "Credits"].map((col) => (
@@ -478,7 +476,6 @@ export default function ExecutionFeed() {
           ))
         )}
       </div>
-      </AnnotationZone>
 
       {/* Pagination */}
       <div className="flex items-center justify-between pt-4">

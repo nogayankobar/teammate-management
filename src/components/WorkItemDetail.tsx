@@ -4,8 +4,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Task, TaskType, LogEntry, FeedbackField } from "@/data/mockData";
-import { AnnotationProvider, useAnnotation } from "@/contexts/AnnotationContext";
-import { AnnotationZone } from "@/components/AnnotationZone";
 
 // ─── Portal ───────────────────────────────────────────────────────────────────
 
@@ -14,28 +12,6 @@ function Portal({ children }: { children: React.ReactNode }) {
   useEffect(() => setMounted(true), []);
   if (!mounted) return null;
   return createPortal(children, document.body);
-}
-
-// ─── Annotation toggle ────────────────────────────────────────────────────────
-
-function AnnotationToggle() {
-  const { annotationMode, toggle } = useAnnotation();
-  return (
-    <button
-      onClick={toggle}
-      className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-2 rounded-full text-[12px] font-semibold shadow-lg border transition-all ${
-        annotationMode
-          ? "bg-gray-800 text-white border-gray-600"
-          : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
-      }`}
-    >
-      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-        <rect x="1" y="1" width="10" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.3" strokeDasharray="2.5 1.5" />
-        <circle cx="6" cy="6" r="1.5" fill="currentColor" />
-      </svg>
-      {annotationMode ? "Exit annotation mode" : "Annotation mode"}
-    </button>
-  );
 }
 
 // ─── Shared helpers ───────────────────────────────────────────────────────────
@@ -496,7 +472,6 @@ function OutcomeCard({ task }: { task: Task }) {
           const barColor = pct === 100 ? "bg-tipalti-success" : pct >= 80 ? "bg-tipalti-blue" : "bg-tipalti-warning";
           const textColor = pct === 100 ? "text-tipalti-success" : pct >= 80 ? "text-tipalti-blue" : "text-tipalti-warning";
           return (
-            <AnnotationZone label="Consumer" description="Consumer selects how accuracy is expressed (confidence bar, score, thumbs, etc.)." rounded="rounded">
             <div className="pb-1">
               <div className="flex items-center justify-between mb-1.5">
                 <span className="text-[12px] text-tipalti-text-muted">{confident}/{total} fields coded confidently</span>
@@ -506,10 +481,9 @@ function OutcomeCard({ task }: { task: Task }) {
                 <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
               </div>
             </div>
-            </AnnotationZone>
           );
         })()}
-        <AnnotationZone label="Fixed" description="Platform generates review reasons and explanations. Format is fixed. Consumer can hide the Outcome card." rounded="rounded-lg" className="space-y-3">
+        <div className="space-y-3">
           {reasons.map((r) => (
             <div key={r.reason} className="flex items-start gap-2">
               <div className="mt-2 flex-shrink-0">
@@ -521,7 +495,7 @@ function OutcomeCard({ task }: { task: Task }) {
               </div>
             </div>
           ))}
-        </AnnotationZone>
+        </div>
       </div>
     </div>
   );
@@ -546,7 +520,6 @@ function FeedbackCard({ override, fields, onOpenFeedback }: {
           Update instructions
         </button>
       </div>
-      <AnnotationZone label="Consumer" description="Consumer decides whether to show this card." rounded="rounded-b-lg">
       <div className="px-4 py-3 space-y-2">
         {override === "none" && (
           <div className="flex items-center gap-2">
@@ -573,7 +546,6 @@ function FeedbackCard({ override, fields, onOpenFeedback }: {
           </div>
         )}
       </div>
-      </AnnotationZone>
     </div>
   );
 }
@@ -658,8 +630,6 @@ function InvoicePanel({ task, onOpenFeedback }: { task: Task; onOpenFeedback: ()
             </svg>
           </a>
         </div>
-        <AnnotationZone label="Consumer" description="Consumer selects which artifact component to display here (document, structured data, free text)." rounded="rounded-b-lg">
-
         {/* File type row — click to expand */}
         <div
           className="px-4 py-3 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors select-none"
@@ -705,7 +675,6 @@ function InvoicePanel({ task, onOpenFeedback }: { task: Task; onOpenFeedback: ()
             <InvoiceDocument task={task} />
           </div>
         )}
-        </AnnotationZone>
       </div>
 
       <OutcomeCard task={task} />
@@ -821,7 +790,6 @@ function ReasoningLog({ task }: { task: Task }) {
           ))}
         </div>
 
-        <AnnotationZone label="Consumer" description="Consumer provides all trace data: each step's action type, action detail, and reasoning text." rounded="rounded-none">
         {filtered.length === 0 ? (
           <div className="py-16 text-center">
             <p className="text-sm text-tipalti-text-muted">No log entries match your search.</p>
@@ -870,7 +838,6 @@ function ReasoningLog({ task }: { task: Task }) {
             );
           })
         )}
-        </AnnotationZone>
       </div>
     </div>
   );
@@ -889,10 +856,8 @@ export default function WorkItemDetail({ task }: { task: Task }) {
     new Date(dt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
 
   return (
-    <AnnotationProvider>
     <div className="flex flex-col h-full overflow-hidden">
       {/* Page header */}
-      <AnnotationZone label="Fixed" description="Platform computes all header metadata: item title, status, date, time, duration, and credits." rounded="rounded-none" labelPosition="top">
       <div className="px-6 pt-3 pb-2.5 border-b border-tipalti-border bg-white flex-shrink-0">
         {/* Vendor name row: arrow + name + pills + open in bills */}
         <div className="flex items-center gap-2 mb-1">
@@ -930,7 +895,6 @@ export default function WorkItemDetail({ task }: { task: Task }) {
           <span>{task.credits} credits</span>
         </div>
       </div>
-      </AnnotationZone>
 
       {/* Two-column body */}
       <div className="flex-1 overflow-hidden grid grid-cols-[360px_1fr] gap-0">
@@ -940,11 +904,9 @@ export default function WorkItemDetail({ task }: { task: Task }) {
         </div>
 
         {/* Right: agent trace */}
-        <AnnotationZone label="Fixed" description="Platform owns the trace layout: column structure, action type taxonomy, badge design, step count, search, and truncation behavior." className="overflow-hidden" rounded="rounded-none">
         <div className="overflow-hidden p-5 h-full">
           <ReasoningLog task={task} />
         </div>
-        </AnnotationZone>
       </div>
 
       {feedbackChatOpen && (
@@ -953,7 +915,5 @@ export default function WorkItemDetail({ task }: { task: Task }) {
         </Portal>
       )}
     </div>
-    <AnnotationToggle />
-    </AnnotationProvider>
   );
 }

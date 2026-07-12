@@ -2,7 +2,6 @@
 
 import { teammate, tasks } from "@/data/mockData";
 import KpiBar from "@/components/KpiBar";
-import { AnnotationZone } from "@/components/AnnotationZone";
 
 type Tab = "feed" | "instructions";
 
@@ -50,8 +49,6 @@ interface TeammateHeaderProps {
 export default function TeammateHeader({ activeTab, onTabChange }: TeammateHeaderProps) {
   return (
     <div>
-      {/* Budget + identity (single platform-owned zone) */}
-      <AnnotationZone label="Fixed" description="Agent identity and credit budget are platform-owned." rounded="rounded-lg">
       <div className="flex justify-end mb-3">
         <BudgetWidget />
       </div>
@@ -69,7 +66,6 @@ export default function TeammateHeader({ activeTab, onTabChange }: TeammateHeade
           </p>
         </div>
       </div>
-      </AnnotationZone>
 
       {/* KPIs */}
       <div className="my-5">

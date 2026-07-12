@@ -1,7 +1,6 @@
 "use client";
 
 import { tasks } from "@/data/mockData";
-import { AnnotationZone } from "@/components/AnnotationZone";
 
 // ─── Computations ─────────────────────────────────────────────────────────────
 
@@ -109,7 +108,7 @@ export default function KpiBar() {
 
   return (
     <div className="bg-white border border-tipalti-border rounded-xl shadow-card flex divide-x divide-tipalti-border overflow-hidden">
-      <AnnotationZone label="Fixed" description="Platform-provided KPI. Design, structure, and calculation are platform-owned. Consumer can show/hide." className="flex-1" rounded="rounded-none">
+      <div className="flex-1">
         <KpiCard
           label="Processed"
           value={`${processed}`}
@@ -119,8 +118,8 @@ export default function KpiBar() {
           sparkPoints={[3, 5, 8, 10, 11, 13, processed]}
           sparkColor="#C1C7D0"
         />
-      </AnnotationZone>
-      <AnnotationZone label="Fixed" description="Platform-provided KPI. Design, structure, and calculation are platform-owned. Consumer can show/hide." className="flex-1" rounded="rounded-none">
+      </div>
+      <div className="flex-1">
         <KpiCard
           label="Accuracy rate"
           value={`${accuracyRate}%`}
@@ -130,8 +129,8 @@ export default function KpiBar() {
           sparkPoints={[58, 61, 65, 67, 64, 68, accuracyRate]}
           sparkColor="#C1C7D0"
         />
-      </AnnotationZone>
-      <AnnotationZone label="Fixed" description="Platform-provided KPI. Design, structure, and calculation are platform-owned. Consumer can show/hide." className="flex-1" rounded="rounded-none">
+      </div>
+      <div className="flex-1">
         <KpiCard
           label="Automation rate"
           value={`${automationRate}%`}
@@ -141,8 +140,8 @@ export default function KpiBar() {
           sparkPoints={[7, 8, 9, 10, 11, 12, automationRate]}
           sparkColor="#C1C7D0"
         />
-      </AnnotationZone>
-      <AnnotationZone label="Consumer" description="Agent-defined KPI. Label, value and formula set by the agent owner." className="flex-1" rounded="rounded-none">
+      </div>
+      <div className="flex-1">
         <KpiCard
           label="Avg review time"
           value="13h"
@@ -153,7 +152,7 @@ export default function KpiBar() {
           sparkPoints={[24, 22, 20, 19, 17, 15, 13]}
           sparkColor="#C1C7D0"
         />
-      </AnnotationZone>
+      </div>
     </div>
   );
 }
