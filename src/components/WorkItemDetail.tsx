@@ -821,6 +821,7 @@ function ReasoningLog({ task }: { task: Task }) {
           ))}
         </div>
 
+        <AnnotationZone label="Consumer" description="Consumer provides all trace data: each step's action type, action detail, and reasoning text." rounded="rounded-none">
         {filtered.length === 0 ? (
           <div className="py-16 text-center">
             <p className="text-sm text-tipalti-text-muted">No log entries match your search.</p>
@@ -869,6 +870,7 @@ function ReasoningLog({ task }: { task: Task }) {
             );
           })
         )}
+        </AnnotationZone>
       </div>
     </div>
   );
@@ -938,7 +940,7 @@ export default function WorkItemDetail({ task }: { task: Task }) {
         </div>
 
         {/* Right: agent trace */}
-        <AnnotationZone label="Fixed" description="Platform owns the full trace: column layout, action type taxonomy, badge colors, truncation, and hover detail." className="overflow-hidden" rounded="rounded-none">
+        <AnnotationZone label="Fixed" description="Platform owns the trace layout: column structure, action type taxonomy, badge design, step count, search, and truncation behavior." className="overflow-hidden" rounded="rounded-none">
         <div className="overflow-hidden p-5 h-full">
           <ReasoningLog task={task} />
         </div>
