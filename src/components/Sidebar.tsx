@@ -141,7 +141,7 @@ export default function Sidebar() {
   ];
 
   const isActive = (item: NavItem) => {
-    if (item.href === "/") return pathname === "/" || pathname.startsWith("/work-items");
+    if (item.href === "/") return pathname === "/" || pathname.startsWith("/work-items") || pathname.startsWith("/agents");
     return pathname.startsWith(item.href);
   };
 

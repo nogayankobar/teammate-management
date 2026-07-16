@@ -1,166 +1,102 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
-import TeammateHeader from "@/components/TeammateHeader";
-import ExecutionFeed from "@/components/ExecutionFeed";
-import Instructions from "@/components/Instructions";
+import { BudgetWidget } from "@/components/TeammateHeader";
+import { superagents, type Superagent } from "@/data/mockData";
 
-type Tab = "feed" | "instructions";
+// ─── Toggle switch ────────────────────────────────────────────────────────────
 
-// ─── Global chat types ────────────────────────────────────────────────────────
-
-interface GMsg {
-  id: string;
-  role: "user" | "ai";
-  text: string;
-  viewInstructions?: boolean;
-}
-
-// ─── Global chat panel (Flow 2: edit instructions from top bar) ───────────────
-
-function DiamondIcon({ size = 13 }: { size?: number }) {
+function ToggleSwitch({
+  checked,
+  disabled,
+  onChange,
+}: {
+  checked: boolean;
+  disabled?: boolean;
+  onChange: () => void;
+}) {
   return (
-    <svg width={size} height={size} viewBox="0 0 14 14" style={{ flexShrink: 0, display: "block" }}>
-      <path d="M7 1L13 7L7 13L1 7L7 1Z" fill="#0065FF" />
-    </svg>
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      disabled={disabled}
+      onClick={onChange}
+      className={`relative w-9 h-5 rounded-full transition-colors flex-shrink-0 ${
+        disabled
+          ? "bg-tipalti-border cursor-not-allowed"
+          : checked
+          ? "bg-tipalti-success"
+          : "bg-tipalti-border"
+      }`}
+    >
+      <span
+        className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+          checked ? "translate-x-4" : "translate-x-0"
+        }`}
+      />
+    </button>
   );
 }
 
-function GlobalChatPanel({
-  messages,
-  input,
-  isTyping,
-  onInputChange,
-  onSend,
-  onClose,
-  onViewInstructions,
-}: {
-  messages: GMsg[];
-  input: string;
-  isTyping: boolean;
-  onInputChange: (v: string) => void;
-  onSend: () => void;
-  onClose: () => void;
-  onViewInstructions: () => void;
-}) {
-  const endRef = useRef<HTMLDivElement>(null);
+// ─── Superagent tile ──────────────────────────────────────────────────────────
 
-  useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping]);
+function SuperagentTile({
+  agent,
+  enabled,
+  onToggle,
+}: {
+  agent: Superagent;
+  enabled: boolean;
+  onToggle: () => void;
+}) {
+  const router = useRouter();
+  const disabled = !!agent.comingSoon;
 
   return (
-    <div className="fixed right-0 top-0 bottom-0 w-[360px] bg-white border-l border-tipalti-border shadow-xl flex flex-col z-50">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-tipalti-border bg-tipalti-bg-light flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <DiamondIcon size={13} />
-          <span className="text-[13px] font-semibold text-tipalti-text-primary">Tipalti AI</span>
-        </div>
-        <button
-          onClick={onClose}
-          className="p-0.5 text-tipalti-text-muted hover:text-tipalti-text-primary transition-colors"
-        >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M3 3l8 8M11 3l-8 8" strokeLinecap="round" />
-          </svg>
-        </button>
-      </div>
-
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 min-h-0">
-        {messages.length === 0 && !isTyping && (
-          <div className="flex flex-col items-center justify-center gap-3 py-12">
-            <DiamondIcon size={22} />
-            <p className="text-[12px] text-tipalti-text-muted text-center leading-relaxed max-w-[200px]">
-              Ask me to add, update, or remove rules from your teammates&apos; instructions.
-            </p>
-          </div>
-        )}
-
-        <div className="space-y-4">
-          {messages.map((msg) =>
-            msg.role === "user" ? (
-              <div key={msg.id} className="flex justify-end">
-                <div className="bg-tipalti-bg-light border border-tipalti-border rounded-2xl rounded-tr-sm px-3 py-2 max-w-[85%]">
-                  <p className="text-[13px] text-tipalti-text-primary leading-relaxed">{msg.text}</p>
-                </div>
-              </div>
-            ) : (
-              <div key={msg.id} className="flex items-start gap-2.5">
-                <div className="mt-0.5 flex-shrink-0">
-                  <DiamondIcon size={13} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[13px] text-tipalti-text-primary leading-relaxed whitespace-pre-wrap">
-                    {msg.text}
-                  </p>
-                  {msg.viewInstructions && (
-                    <button
-                      onClick={onViewInstructions}
-                      className="mt-2 text-[12px] font-medium text-tipalti-blue hover:underline flex items-center gap-1"
-                    >
-                      View instructions
-                      <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.4">
-                        <path d="M3 7.5L7.5 3M7.5 3H4.5M7.5 3V6" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-              </div>
-            )
-          )}
-
-          {isTyping && (
-            <div className="flex items-start gap-2.5">
-              <div className="mt-0.5 flex-shrink-0">
-                <DiamondIcon size={13} />
-              </div>
-              <div className="flex gap-1 pt-1">
-                {[0, 1, 2].map((i) => (
-                  <div
-                    key={i}
-                    className="w-1.5 h-1.5 rounded-full bg-tipalti-text-muted animate-bounce"
-                    style={{ animationDelay: `${i * 0.15}s` }}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-        <div ref={endRef} />
-      </div>
-
-      {/* Input */}
-      <div className="border-t border-tipalti-border px-3 py-2.5 flex-shrink-0">
-        <div className="flex items-center gap-2 bg-tipalti-bg-light border border-tipalti-border rounded-xl px-3 py-2">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => onInputChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                onSend();
-              }
-            }}
-            placeholder="Ask about AP Specialist…"
-            className="flex-1 text-[13px] bg-transparent text-tipalti-text-primary placeholder-tipalti-text-muted focus:outline-none"
-          />
-          <button
-            onClick={onSend}
-            disabled={!input.trim()}
-            className="w-5 h-5 rounded-md bg-tipalti-blue flex items-center justify-center disabled:opacity-30 hover:bg-tipalti-blue-hover transition-colors flex-shrink-0"
+    <div
+      className={`bg-white border border-tipalti-border rounded-xl shadow-card p-5 flex flex-col gap-4 ${
+        disabled ? "opacity-60" : ""
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          <div
+            className="w-11 h-11 rounded-xl flex items-center justify-center shadow-card flex-shrink-0"
+            style={{ backgroundColor: agent.avatarColor }}
           >
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-              <path d="M1.5 9L9 5L1.5 1V4L6.5 5L1.5 6V9Z" fill="white" />
+            <span className="text-white font-bold text-sm">{agent.avatar}</span>
+          </div>
+          <div className="min-w-0">
+            <h3 className="text-[14px] font-bold text-tipalti-text-primary truncate">{agent.name}</h3>
+            <p className="text-[12px] text-tipalti-text-muted mt-0.5 truncate">{agent.domain}</p>
+          </div>
+        </div>
+        <ToggleSwitch checked={enabled} disabled={disabled} onChange={onToggle} />
+      </div>
+
+      <p className="text-[12px] text-tipalti-text-secondary leading-relaxed">{agent.job}</p>
+
+      <div className="mt-auto pt-1">
+        {agent.comingSoon ? (
+          <span className="inline-flex items-center w-fit px-2 py-1 rounded-full bg-tipalti-bg-light border border-tipalti-border text-[11px] font-medium text-tipalti-text-muted">
+            Coming soon
+          </span>
+        ) : agent.href ? (
+          <button
+            onClick={() => router.push(agent.href!)}
+            className="text-[13px] font-medium text-tipalti-blue hover:underline flex items-center gap-1 w-fit"
+          >
+            Open {agent.name}
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.4">
+              <path d="M3 7.5L7.5 3M7.5 3H4.5M7.5 3V6" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
-        </div>
-        <p className="text-[10px] text-tipalti-text-muted mt-1.5 text-center leading-tight">
-          AI can make mistakes. Tipalti doesn&apos;t use your data to train its models.
-        </p>
+        ) : (
+          <p className="text-[12px] text-tipalti-text-muted italic">No workspace set up yet</p>
+        )}
       </div>
     </div>
   );
@@ -168,99 +104,16 @@ function GlobalChatPanel({
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-const CONFIRM_WORDS = ["yes", "ok", "sure", "confirm", "apply", "looks good", "good", "proceed", "go ahead", "do it"];
+export default function SuperagentsOverviewPage() {
+  const [enabled, setEnabled] = useState<Record<string, boolean>>({
+    ap: true,
+    procurement: true,
+    expenses: true,
+    treasury: false,
+  });
 
-export default function Home() {
-  const [activeTab, setActiveTab] = useState<Tab>("feed");
-
-  // Global chat state
-  const [gcOpen, setGcOpen] = useState(false);
-  const [gcMessages, setGcMessages] = useState<GMsg[]>([]);
-  const [gcInput, setGcInput] = useState("");
-  const [gcTyping, setGcTyping] = useState(false);
-  const [gcPending, setGcPending] = useState(false);
-  const gcMsgId = useRef(0);
-
-  const gcNextId = () => `g${++gcMsgId.current}`;
-  const gcSleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
-
-  const gcPushMsg = (role: "user" | "ai", text: string, extras?: Partial<GMsg>) =>
-    new Promise<void>((resolve) => {
-      const id = gcNextId();
-      setGcMessages((prev) => [...prev, { id, role, text, ...extras }]);
-      resolve();
-    });
-
-  const gcAiType = async (ms = 1400) => {
-    setGcTyping(true);
-    await gcSleep(ms);
-    setGcTyping(false);
-  };
-
-  const handleGcOpen = async () => {
-    setGcOpen(true);
-    if (gcMessages.length === 0) {
-      await gcSleep(150);
-      await gcAiType(900);
-      await gcPushMsg(
-        "ai",
-        "Hi! I can help update your teammates' instructions. Which teammate, and what would you like to change?"
-      );
-    }
-  };
-
-  const handleGcSend = async () => {
-    const text = gcInput.trim();
-    if (!text) return;
-    setGcInput("");
-
-    // Confirmation
-    if (gcPending) {
-      const lower = text.toLowerCase();
-      if (CONFIRM_WORDS.some((w) => lower.includes(w))) {
-        await gcPushMsg("user", text);
-        await gcAiType(800);
-        await gcPushMsg(
-          "ai",
-          "Done. AP Specialist instructions updated to v4. Changes are now active for new work items.",
-          { viewInstructions: true }
-        );
-        setGcPending(false);
-        return;
-      }
-    }
-
-    await gcPushMsg("user", text);
-    await gcAiType(1800);
-
-    const lower = text.toLowerCase();
-
-    if (
-      lower.includes("instruction") ||
-      lower.includes("rule") ||
-      lower.includes("threshold") ||
-      lower.includes("route") ||
-      lower.includes("escalat") ||
-      lower.includes("ap specialist") ||
-      lower.includes("mom") ||
-      lower.includes("vendor")
-    ) {
-      const nextVer = 4;
-      const ruleText = text
-        .replace(/^(update|change|add|set|make|for the ap specialist[,]?\s*)/i, "")
-        .replace(/^[^A-Za-z0-9]/, "");
-      const formattedRule = ruleText.charAt(0).toUpperCase() + ruleText.slice(1);
-      await gcPushMsg(
-        "ai",
-        `Got it. Here's the proposed update to the AP Specialist's instructions:\n\n"${formattedRule}"\n\nNo conflicts detected with existing rules. This will become version ${nextVer}. Type "yes" to confirm.`
-      );
-      setGcPending(true);
-    } else {
-      await gcPushMsg(
-        "ai",
-        "I can help with that. Which teammate's instructions would you like to update, and what's the change?"
-      );
-    }
+  const toggleAgent = (id: string) => {
+    setEnabled((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
   return (
@@ -280,14 +133,7 @@ export default function Home() {
             <span className="font-medium">AI Workforce</span>
           </div>
           <div className="flex items-center gap-4">
-            <button
-              onClick={handleGcOpen}
-              className={`flex items-center gap-1.5 transition-colors ${
-                gcOpen
-                  ? "text-tipalti-blue"
-                  : "text-tipalti-text-muted hover:text-tipalti-text-primary"
-              }`}
-            >
+            <button className="flex items-center gap-1.5 text-tipalti-text-muted hover:text-tipalti-text-primary transition-colors">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
                 <path d="M6 0C6.8 3.2 6.8 3.2 10 4C6.8 4.8 6.8 4.8 6 8C5.2 4.8 5.2 4.8 2 4C5.2 3.2 5.2 3.2 6 0Z" />
                 <path d="M12 6C12.5 8 12.5 8 14.5 8.5C12.5 9 12.5 9 12 11C11.5 9 11.5 9 9.5 8.5C11.5 8 11.5 8 12 6Z" />
@@ -323,30 +169,29 @@ export default function Home() {
         {/* Page content */}
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-[1100px] mx-auto px-6 py-6">
-            <TeammateHeader activeTab={activeTab} onTabChange={setActiveTab} />
-            <div className="mt-6">
-              {activeTab === "feed" && <ExecutionFeed />}
-              {activeTab === "instructions" && <Instructions />}
+            <div className="flex items-start justify-between gap-6 mb-6">
+              <div>
+                <h1 className="text-[22px] font-bold text-tipalti-text-primary tracking-tight">AI Superagents</h1>
+                <p className="text-[13px] text-tipalti-text-muted mt-1">
+                  Manage and monitor your AI Superagents across finance operations.
+                </p>
+              </div>
+              <BudgetWidget />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {superagents.map((agent) => (
+                <SuperagentTile
+                  key={agent.id}
+                  agent={agent}
+                  enabled={!!enabled[agent.id]}
+                  onToggle={() => toggleAgent(agent.id)}
+                />
+              ))}
             </div>
           </div>
         </div>
       </main>
-
-      {/* Global chat panel */}
-      {gcOpen && (
-        <GlobalChatPanel
-          messages={gcMessages}
-          input={gcInput}
-          isTyping={gcTyping}
-          onInputChange={setGcInput}
-          onSend={handleGcSend}
-          onClose={() => setGcOpen(false)}
-          onViewInstructions={() => {
-            setActiveTab("instructions");
-            setGcOpen(false);
-          }}
-        />
-      )}
     </div>
   );
 }

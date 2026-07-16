@@ -74,6 +74,54 @@ export interface Teammate {
   lastActive: string;
 }
 
+export interface Superagent {
+  id: string;
+  name: string;
+  domain: string;
+  job: string;
+  avatar: string;
+  avatarColor: string;
+  href?: string;
+  comingSoon?: boolean;
+}
+
+export const superagents: Superagent[] = [
+  {
+    id: "ap",
+    name: "AP Agent",
+    domain: "Accounts Payable",
+    job: "Invoice processing & bill coding",
+    avatar: "AP",
+    avatarColor: "#0052CC",
+    href: "/agents/ap",
+  },
+  {
+    id: "procurement",
+    name: "Procurement Agent",
+    domain: "Procurement",
+    job: "Purchase order management",
+    avatar: "PR",
+    avatarColor: "#5243AA",
+  },
+  {
+    id: "expenses",
+    name: "Expenses Agent",
+    domain: "Expenses",
+    job: "Expense report processing",
+    avatar: "EX",
+    avatarColor: "#36B37E",
+  },
+  {
+    id: "treasury",
+    name: "Treasury Agent",
+    domain: "Treasury",
+    job: "Cash & liquidity management",
+    avatar: "TR",
+    avatarColor: "#97A0AF",
+    comingSoon: true,
+  },
+];
+
 export interface InstructionVersion {
   version: number;
   content: string;
