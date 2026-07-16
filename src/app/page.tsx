@@ -59,7 +59,7 @@ function SuperagentTile({
   return (
     <div
       onClick={clickable ? () => router.push(agent.href!) : undefined}
-      className={`bg-white border border-tipalti-border rounded-xl shadow-card p-5 flex flex-col gap-4 transition-colors ${
+      className={`bg-white border border-tipalti-border rounded-xl shadow-card p-5 flex flex-col gap-4 min-h-[188px] transition-colors ${
         disabled ? "opacity-60" : ""
       } ${clickable ? "cursor-pointer hover:border-tipalti-blue" : ""}`}
     >
@@ -83,11 +83,13 @@ function SuperagentTile({
 
       <p className="text-[12px] text-tipalti-text-secondary leading-relaxed">{agent.job}</p>
 
-      {agent.comingSoon && (
-        <span className="inline-flex items-center w-fit px-2 py-1 rounded-full bg-tipalti-bg-light border border-tipalti-border text-[11px] font-medium text-tipalti-text-muted">
-          Coming soon
-        </span>
-      )}
+      <div className="mt-auto">
+        {agent.comingSoon && (
+          <span className="inline-flex items-center w-fit px-2 py-1 rounded-full bg-tipalti-bg-light border border-tipalti-border text-[11px] font-medium text-tipalti-text-muted">
+            Coming soon
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -169,7 +171,7 @@ export default function SuperagentsOverviewPage() {
               <BudgetWidget />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 auto-rows-fr gap-4">
               {superagents.map((agent) => (
                 <SuperagentTile
                   key={agent.id}

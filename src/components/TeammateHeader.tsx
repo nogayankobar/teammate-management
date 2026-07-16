@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { teammate, tasks } from "@/data/mockData";
 import KpiBar from "@/components/KpiBar";
 
@@ -47,12 +48,24 @@ interface TeammateHeaderProps {
 }
 
 export default function TeammateHeader({ activeTab, onTabChange }: TeammateHeaderProps) {
+  const router = useRouter();
+
   return (
     <div>
       <div className="flex justify-end mb-3">
         <BudgetWidget />
       </div>
-      <div className="flex items-center gap-4 mb-5">
+      <div className="flex items-center gap-3 mb-5">
+        <button
+          onClick={() => router.push("/")}
+          aria-label="Back to AI Superagents"
+          title="Back to AI Superagents"
+          className="w-8 h-8 rounded-lg flex items-center justify-center text-tipalti-text-muted hover:text-tipalti-text-primary hover:bg-tipalti-bg-light transition-colors flex-shrink-0"
+        >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6">
+            <path d="M10 3L5 8l5 5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
         <div
           className="w-11 h-11 rounded-xl flex items-center justify-center shadow-card flex-shrink-0"
           style={{ backgroundColor: teammate.avatarColor }}

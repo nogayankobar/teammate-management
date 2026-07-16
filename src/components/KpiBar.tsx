@@ -8,6 +8,7 @@ function computeKpis() {
   const total = tasks.length;
   const inProgress = tasks.filter((t) => t.status === "in_progress").length;
   const processed = total - inProgress;
+  const volumeRate = total > 0 ? Math.round((processed / total) * 100) : 0;
 
   const scoreable = tasks.filter(
     (t) => t.status !== "in_progress" && t.status !== "pending_review" && t.status !== "flagged"
@@ -26,26 +27,65 @@ function computeKpis() {
   const autoHandled = completed.filter((t) => t.status === "auto_approved").length;
   const automationRate = completed.length > 0 ? Math.round((autoHandled / completed.length) * 100) : 0;
 
-  return { total, processed, accuracyRate, automationRate };
+  return { total, processed, volumeRate, accuracyRate, automationRate };
 }
 
-// ─── Sparkline ────────────────────────────────────────────────────────────────
+// ─── Info icon ────────────────────────────────────────────────────────────────
 
-function Sparkline({ points, color }: { points: number[]; color: string }) {
-  const w = 80;
-  const h = 28;
+function InfoIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2" className="text-tipalti-text-muted flex-shrink-0">
+      <circle cx="6" cy="6" r="5" />
+      <path d="M6 5.5v3" strokeLinecap="round" />
+      <circle cx="6" cy="3.7" r="0.5" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+// ─── Delta pill ───────────────────────────────────────────────────────────────
+
+function DeltaPill({ delta, positive, down }: { delta: string; positive: boolean; down?: boolean }) {
+  const arrowDown = down ?? !positive;
+  const bg = positive ? "bg-tipalti-success-bg text-tipalti-success" : "bg-tipalti-danger-bg text-tipalti-danger";
+  return (
+    <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9.5px] leading-none font-medium whitespace-nowrap flex-shrink-0 ${bg}`}>
+      <svg width="7" height="7" viewBox="0 0 11 11" fill="none" className="flex-shrink-0">
+        <path
+          d={arrowDown ? "M5.5 2v7M2 5.5l3.5 3.5 3.5-3.5" : "M5.5 9V2M2 5.5l3.5-3.5 3.5 3.5"}
+          stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"
+        />
+      </svg>
+      {delta} vs last week
+    </span>
+  );
+}
+
+// ─── Area sparkline ───────────────────────────────────────────────────────────
+
+function AreaSparkline({ points, color, gradientId }: { points: number[]; color: string; gradientId: string }) {
+  const w = 100;
+  const h = 36;
   const min = Math.min(...points);
   const max = Math.max(...points);
   const range = max - min || 1;
   const step = w / (points.length - 1);
   const coords = points.map((v, i) => [
     i * step,
-    h - ((v - min) / range) * (h - 4) - 2,
+    h - ((v - min) / range) * (h - 6) - 3,
   ]);
-  const d = coords.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+  const line = coords.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+  const area = `${line} L${w},${h} L0,${h} Z`;
+
   return (
-    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} fill="none">
-      <path d={d} stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" fill="none">
+      <defs>
+        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.28" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={area} fill={`url(#${gradientId})`} stroke="none" />
+      <path d={line} stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -60,7 +100,6 @@ function KpiCard({
   deltaPositive,
   deltaDown,
   sparkPoints,
-  sparkColor,
 }: {
   label: string;
   value: string;
@@ -69,33 +108,27 @@ function KpiCard({
   deltaPositive: boolean;
   deltaDown?: boolean;
   sparkPoints: number[];
-  sparkColor: string;
 }) {
-  const arrowDown = deltaDown ?? !deltaPositive;
+  const sparkColor = "#6366F1";
+  const gradientId = `kpi-spark-${label.replace(/\s+/g, "-").toLowerCase()}`;
+
   return (
-    <div className="flex-1 px-6 py-4 flex flex-col gap-1.5">
-      <p className="text-[11px] font-semibold text-tipalti-text-muted uppercase tracking-wide">{label}</p>
-      <div className="flex items-end justify-between gap-3">
-        <div>
-          <p className="text-[26px] font-bold text-tipalti-text-primary leading-none">{value}</p>
-          {sub && <p className="text-[11px] text-tipalti-text-muted mt-0.5">{sub}</p>}
-          <div className="flex items-center gap-1 mt-1.5">
-            <svg
-              width="11" height="11" viewBox="0 0 11 11" fill="none"
-              className={deltaPositive ? "text-tipalti-success" : "text-tipalti-danger"}
-            >
-              <path
-                d={arrowDown ? "M5.5 2v7M2 5.5l3.5 3.5 3.5-3.5" : "M5.5 9V2M2 5.5l3.5-3.5 3.5 3.5"}
-                stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"
-              />
-            </svg>
-            <span className={`text-[11px] font-medium ${deltaPositive ? "text-tipalti-success" : "text-tipalti-danger"}`}>
-              {delta}
-            </span>
-            <span className="text-[11px] text-tipalti-text-muted">vs last week</span>
+    <div className="bg-white border border-tipalti-border rounded-xl shadow-card overflow-hidden flex flex-col">
+      <div className="px-3.5 pt-3.5 flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-1.5">
+          <div className="flex items-center gap-1 min-w-0 flex-shrink-0">
+            <span className="text-[11.5px] font-medium text-tipalti-text-secondary whitespace-nowrap">{label}</span>
+            <InfoIcon />
           </div>
+          <DeltaPill delta={delta} positive={deltaPositive} down={deltaDown} />
         </div>
-        <Sparkline points={sparkPoints} color={sparkColor} />
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-[24px] font-bold text-tipalti-text-primary leading-none">{value}</span>
+          {sub && <span className="text-[12px] text-tipalti-text-muted">{sub}</span>}
+        </div>
+      </div>
+      <div className="mt-2 -mb-px">
+        <AreaSparkline points={sparkPoints} color={sparkColor} gradientId={gradientId} />
       </div>
     </div>
   );
@@ -104,55 +137,43 @@ function KpiCard({
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function KpiBar() {
-  const { total, processed, accuracyRate, automationRate } = computeKpis();
+  const { processed, total, volumeRate, accuracyRate, automationRate } = computeKpis();
 
   return (
-    <div className="bg-white border border-tipalti-border rounded-xl shadow-card flex divide-x divide-tipalti-border overflow-hidden">
-      <div className="flex-1">
-        <KpiCard
-          label="Processed"
-          value={`${processed}`}
-          sub={`of ${total} items`}
-          delta="+3"
-          deltaPositive
-          sparkPoints={[3, 5, 8, 10, 11, 13, processed]}
-          sparkColor="#C1C7D0"
-        />
-      </div>
-      <div className="flex-1">
-        <KpiCard
-          label="Accuracy rate"
-          value={`${accuracyRate}%`}
-          sub="of fields"
-          delta="+7pp"
-          deltaPositive
-          sparkPoints={[58, 61, 65, 67, 64, 68, accuracyRate]}
-          sparkColor="#C1C7D0"
-        />
-      </div>
-      <div className="flex-1">
-        <KpiCard
-          label="Automation rate"
-          value={`${automationRate}%`}
-          sub="no human touch"
-          delta="+3pp"
-          deltaPositive
-          sparkPoints={[7, 8, 9, 10, 11, 12, automationRate]}
-          sparkColor="#C1C7D0"
-        />
-      </div>
-      <div className="flex-1">
-        <KpiCard
-          label="Avg review time"
-          value="13h"
-          sub="24h for all"
-          delta="-7.3%"
-          deltaPositive
-          deltaDown
-          sparkPoints={[24, 22, 20, 19, 17, 15, 13]}
-          sparkColor="#C1C7D0"
-        />
-      </div>
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <KpiCard
+        label="Volume rate"
+        value={`${volumeRate}%`}
+        sub={`${processed} out of ${total} items`}
+        delta="+6%"
+        deltaPositive
+        sparkPoints={[3, 5, 8, 10, 11, 13, volumeRate]}
+      />
+      <KpiCard
+        label="Automation rate"
+        value={`${automationRate}%`}
+        sub="no changes"
+        delta="+7%"
+        deltaPositive
+        sparkPoints={[7, 8, 9, 10, 11, 12, automationRate]}
+      />
+      <KpiCard
+        label="Accuracy rate"
+        value={`${accuracyRate}%`}
+        sub="of fields"
+        delta="+7%"
+        deltaPositive
+        sparkPoints={[58, 61, 65, 67, 64, 68, accuracyRate]}
+      />
+      <KpiCard
+        label="Avg review time"
+        value="13h"
+        sub="24h for all"
+        delta="-7.3%"
+        deltaPositive
+        deltaDown
+        sparkPoints={[24, 22, 20, 19, 17, 15, 13]}
+      />
     </div>
   );
 }

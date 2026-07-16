@@ -145,7 +145,7 @@ function GlobalChatPanel({
                 onSend();
               }
             }}
-            placeholder="Ask about AP Specialist…"
+            placeholder="Ask about AP Agent…"
             className="flex-1 text-[13px] bg-transparent text-tipalti-text-primary placeholder-tipalti-text-muted focus:outline-none"
           />
           <button
@@ -222,7 +222,7 @@ export default function Home() {
         await gcAiType(800);
         await gcPushMsg(
           "ai",
-          "Done. AP Specialist instructions updated to v4. Changes are now active for new work items.",
+          "Done. AP Agent instructions updated to v4. Changes are now active for new work items.",
           { viewInstructions: true }
         );
         setGcPending(false);
@@ -241,18 +241,18 @@ export default function Home() {
       lower.includes("threshold") ||
       lower.includes("route") ||
       lower.includes("escalat") ||
-      lower.includes("ap specialist") ||
+      lower.includes("ap agent") ||
       lower.includes("mom") ||
       lower.includes("vendor")
     ) {
       const nextVer = 4;
       const ruleText = text
-        .replace(/^(update|change|add|set|make|for the ap specialist[,]?\s*)/i, "")
+        .replace(/^(update|change|add|set|make|for the ap agent[,]?\s*)/i, "")
         .replace(/^[^A-Za-z0-9]/, "");
       const formattedRule = ruleText.charAt(0).toUpperCase() + ruleText.slice(1);
       await gcPushMsg(
         "ai",
-        `Got it. Here's the proposed update to the AP Specialist's instructions:\n\n"${formattedRule}"\n\nNo conflicts detected with existing rules. This will become version ${nextVer}. Type "yes" to confirm.`
+        `Got it. Here's the proposed update to the AP Agent's instructions:\n\n"${formattedRule}"\n\nNo conflicts detected with existing rules. This will become version ${nextVer}. Type "yes" to confirm.`
       );
       setGcPending(true);
     } else {
@@ -322,7 +322,7 @@ export default function Home() {
 
         {/* Page content */}
         <div className="flex-1 overflow-y-auto">
-          <div className="max-w-[1100px] mx-auto px-6 py-6">
+          <div className="max-w-[1220px] mx-auto px-6 py-6">
             <TeammateHeader activeTab={activeTab} onTabChange={setActiveTab} />
             <div className="mt-6">
               {activeTab === "feed" && <ExecutionFeed />}

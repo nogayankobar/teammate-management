@@ -132,7 +132,7 @@ export interface InstructionVersion {
 
 export const teammate: Teammate = {
   id: "ap-specialist-01",
-  name: "AP Specialist",
+  name: "AP Agent",
   domain: "Accounts Payable",
   job: "Invoice Processing",
   avatar: "AP",

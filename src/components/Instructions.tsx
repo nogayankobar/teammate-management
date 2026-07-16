@@ -834,7 +834,7 @@ export default function Instructions() {
                 onChange={(e) => handleChange(e.target.value)}
                 className="flex-1 w-full px-6 py-5 text-sm text-tipalti-text-primary leading-relaxed resize-none focus:outline-none"
                 style={{ minHeight: "calc(100vh - 480px)" }}
-                placeholder={"Add instructions for the AP Specialist. For example:\n- Figma invoices → always route to VP Design\n- Escalate any new vendor regardless of amount"}
+                placeholder={"Add instructions for the AP Agent. For example:\n- Figma invoices → always route to VP Design\n- Escalate any new vendor regardless of amount"}
                 spellCheck={false}
                 autoFocus
               />
