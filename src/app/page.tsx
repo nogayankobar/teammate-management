@@ -54,12 +54,14 @@ function SuperagentTile({
 }) {
   const router = useRouter();
   const disabled = !!agent.comingSoon;
+  const clickable = !disabled && !!agent.href;
 
   return (
     <div
-      className={`bg-white border border-tipalti-border rounded-xl shadow-card p-5 flex flex-col gap-4 ${
+      onClick={clickable ? () => router.push(agent.href!) : undefined}
+      className={`bg-white border border-tipalti-border rounded-xl shadow-card p-5 flex flex-col gap-4 transition-colors ${
         disabled ? "opacity-60" : ""
-      }`}
+      } ${clickable ? "cursor-pointer hover:border-tipalti-blue" : ""}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
@@ -74,30 +76,18 @@ function SuperagentTile({
             <p className="text-[12px] text-tipalti-text-muted mt-0.5 truncate">{agent.domain}</p>
           </div>
         </div>
-        <ToggleSwitch checked={enabled} disabled={disabled} onChange={onToggle} />
+        <div onClick={(e) => e.stopPropagation()}>
+          <ToggleSwitch checked={enabled} disabled={disabled} onChange={onToggle} />
+        </div>
       </div>
 
       <p className="text-[12px] text-tipalti-text-secondary leading-relaxed">{agent.job}</p>
 
-      <div className="mt-auto pt-1">
-        {agent.comingSoon ? (
-          <span className="inline-flex items-center w-fit px-2 py-1 rounded-full bg-tipalti-bg-light border border-tipalti-border text-[11px] font-medium text-tipalti-text-muted">
-            Coming soon
-          </span>
-        ) : agent.href ? (
-          <button
-            onClick={() => router.push(agent.href!)}
-            className="text-[13px] font-medium text-tipalti-blue hover:underline flex items-center gap-1 w-fit"
-          >
-            Open {agent.name}
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.4">
-              <path d="M3 7.5L7.5 3M7.5 3H4.5M7.5 3V6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-        ) : (
-          <p className="text-[12px] text-tipalti-text-muted italic">No workspace set up yet</p>
-        )}
-      </div>
+      {agent.comingSoon && (
+        <span className="inline-flex items-center w-fit px-2 py-1 rounded-full bg-tipalti-bg-light border border-tipalti-border text-[11px] font-medium text-tipalti-text-muted">
+          Coming soon
+        </span>
+      )}
     </div>
   );
 }
