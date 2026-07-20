@@ -4,7 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import { BudgetWidget } from "@/components/TeammateHeader";
-import { superagents, type Superagent } from "@/data/mockData";
+import SuperagentsHubBanner from "@/components/SuperagentsHubBanner";
+import { computeKpis } from "@/components/KpiBar";
+import { superagents, teammate, type Superagent } from "@/data/mockData";
 
 // ─── Toggle switch ────────────────────────────────────────────────────────────
 
@@ -56,6 +58,10 @@ function SuperagentTile({
   const disabled = !!agent.comingSoon;
   const clickable = !disabled && !!agent.href;
 
+  // Mock data only models one live agent today - reuse its status + KPI math for the tile.
+  const live = agent.id === "ap";
+  const { automationRate, processed, total } = live ? computeKpis() : { automationRate: 0, processed: 0, total: 0 };
+
   return (
     <div
       onClick={clickable ? () => router.push(agent.href!) : undefined}
@@ -81,13 +87,34 @@ function SuperagentTile({
         </div>
       </div>
 
-      <p className="text-[12px] text-tipalti-text-secondary leading-relaxed">{agent.job}</p>
+      {live && (
+        <div className="flex items-center gap-1.5 -mt-1">
+          <span
+            className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+              teammate.status === "active" ? "bg-tipalti-success" : "bg-tipalti-text-muted"
+            }`}
+          />
+          <span className="text-[11.5px] font-medium text-tipalti-text-secondary">
+            {teammate.status === "active" ? "Active" : `Last active ${teammate.lastActive}`}
+          </span>
+        </div>
+      )}
 
-      <div className="mt-auto">
+      {agent.job && <p className="text-[12px] text-tipalti-text-secondary leading-relaxed">{agent.job}</p>}
+
+      <div className="mt-auto flex items-center justify-between gap-2">
         {agent.comingSoon && (
           <span className="inline-flex items-center w-fit px-2 py-1 rounded-full bg-tipalti-bg-light border border-tipalti-border text-[11px] font-medium text-tipalti-text-muted">
             Coming soon
           </span>
+        )}
+        {live && (
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-[18px] font-bold text-tipalti-text-primary leading-none">{automationRate}%</span>
+            <span className="text-[11px] text-tipalti-text-muted">
+              automated · {processed}/{total} this week
+            </span>
+          </div>
         )}
       </div>
     </div>
@@ -99,9 +126,8 @@ function SuperagentTile({
 export default function SuperagentsOverviewPage() {
   const [enabled, setEnabled] = useState<Record<string, boolean>>({
     ap: true,
-    procurement: true,
-    expenses: true,
-    treasury: false,
+    procurement: false,
+    expenses: false,
   });
 
   const toggleAgent = (id: string) => {
@@ -170,6 +196,8 @@ export default function SuperagentsOverviewPage() {
               </div>
               <BudgetWidget />
             </div>
+
+            <SuperagentsHubBanner />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 auto-rows-fr gap-4">
               {superagents.map((agent) => (

@@ -67,7 +67,7 @@ export interface Teammate {
   id: string;
   name: string;
   domain: string;
-  job: string;
+  job?: string;
   avatar: string;
   avatarColor: string;
   status: "active" | "paused";
@@ -78,7 +78,7 @@ export interface Superagent {
   id: string;
   name: string;
   domain: string;
-  job: string;
+  job?: string;
   avatar: string;
   avatarColor: string;
   href?: string;
@@ -88,36 +88,27 @@ export interface Superagent {
 export const superagents: Superagent[] = [
   {
     id: "ap",
-    name: "AP Agent",
+    name: "AP Superagent",
     domain: "Accounts Payable",
-    job: "Captures and validates incoming invoices so they're ready to move through the workflow without manual intervention.",
+    job: "Handles invoice processing end-to-end, capturing and validating invoices so they move through your workflow without manual intervention.",
     avatar: "AP",
     avatarColor: "#0052CC",
     href: "/agents/ap",
   },
   {
     id: "procurement",
-    name: "Procurement Agent",
+    name: "Procurement Superagent",
     domain: "Procurement",
-    job: "Reviews purchase requests and vendor quotes against policy so approved POs are issued without manual chasing.",
     avatar: "PR",
     avatarColor: "#5243AA",
+    comingSoon: true,
   },
   {
     id: "expenses",
-    name: "Expenses Agent",
+    name: "Expenses Superagent",
     domain: "Expenses",
-    job: "Reviews submitted expense reports for completeness, receipt validity, and accuracy.",
     avatar: "EX",
     avatarColor: "#36B37E",
-  },
-  {
-    id: "treasury",
-    name: "Treasury Agent",
-    domain: "Treasury",
-    job: "Monitors cash positions and reconciles balances so liquidity forecasts stay accurate and up to date.",
-    avatar: "TR",
-    avatarColor: "#97A0AF",
     comingSoon: true,
   },
 ];
@@ -132,7 +123,7 @@ export interface InstructionVersion {
 
 export const teammate: Teammate = {
   id: "ap-specialist-01",
-  name: "AP Agent",
+  name: "AP Superagent",
   domain: "Accounts Payable",
   job: "Invoice Processing",
   avatar: "AP",

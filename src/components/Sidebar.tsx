@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter, usePathname } from "next/navigation";
+import NavSuperagentsBubble from "@/components/NavSuperagentsBubble";
 
 // ─── Nav icons (outline style matching Tipalti) ──────────────────────────────
 
@@ -74,14 +75,11 @@ function NavIcon({ type }: { type: string }) {
           <path d="M4 16V8M8 16V4M12 16v-6M16 16V7" strokeLinecap="round" />
         </svg>
       );
-    case "workforce":
+    case "superagents":
       return (
-        <svg className={cls} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
-          <circle cx="7" cy="7" r="2.5" />
-          <circle cx="13" cy="7" r="2.5" />
-          <path d="M2 16c0-2.5 2.2-4.5 5-4.5s5 2 5 4.5" strokeLinecap="round" />
-          <path d="M12 11.8c.4-.2.8-.3 1.3-.3 2.5 0 4.7 2 4.7 4.5" strokeLinecap="round" />
-          <circle cx="10" cy="3" r="1" fill="currentColor" stroke="none" />
+        <svg className={cls} viewBox="0 0 20 20" fill="currentColor">
+          <path d="M10 2C10.8 5.5 10.8 5.5 14.5 6.5C10.8 7.5 10.8 7.5 10 11C9.2 7.5 9.2 7.5 5.5 6.5C9.2 5.5 9.2 5.5 10 2Z" />
+          <path d="M5 11.5C5.4 13 5.4 13 7 13.5C5.4 14 5.4 14 5 15.5C4.6 14 4.6 14 3 13.5C4.6 13 4.6 13 5 11.5Z" />
         </svg>
       );
     case "admin":
@@ -90,25 +88,23 @@ function NavIcon({ type }: { type: string }) {
           <path d="M4 6h12M4 10h12M4 14h12" strokeLinecap="round" />
         </svg>
       );
-    case "ai-settings":
-      return (
-        <svg className={cls} viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
-          <path d="M3 5h2m0 0a2 2 0 004 0m-4 0a2 2 0 014 0m0 0h8" strokeLinecap="round" />
-          <path d="M3 10h8m0 0a2 2 0 004 0m-4 0a2 2 0 014 0m0 0h2" strokeLinecap="round" />
-          <path d="M3 15h2m0 0a2 2 0 004 0m-4 0a2 2 0 014 0m0 0h8" strokeLinecap="round" />
-        </svg>
-      );
     default:
       return <div className={cls} />;
   }
 }
 
-// ─── Chevron for dropdowns ───────────────────────────────────────────────────
-
 function DropdownChevron() {
   return (
-    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className="ml-auto opacity-50">
-      <path d="M3 4l2 2 2-2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" className="ml-auto opacity-60 flex-shrink-0">
+      <path d="M3 4l2 2 2-2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function HamburgerIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6">
+      <path d="M3 5h14M3 10h14M3 15h14" strokeLinecap="round" />
     </svg>
   );
 }
@@ -120,8 +116,8 @@ interface NavItem {
   label: string;
   icon: string;
   href: string;
-  badge?: number;
-  dividerBefore?: boolean;
+  hasDropdown?: boolean;
+  isNew?: boolean;
 }
 
 export default function Sidebar() {
@@ -129,44 +125,52 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   const navItems: NavItem[] = [
-    { id: "home",        label: "Home",           icon: "home",        href: "#" },
-    { id: "workforce",   label: "AI Workforce",   icon: "workforce",   href: "/",           badge: 3 },
-    { id: "bills",       label: "Bills",           icon: "bills",       href: "#", dividerBefore: true },
-    { id: "payments",    label: "Payments",        icon: "payments",    href: "#" },
-    { id: "cards",       label: "Cards",           icon: "cards",       href: "#" },
-    { id: "expenses",    label: "Expenses",        icon: "expenses",    href: "#" },
-    { id: "payees",      label: "Payees",          icon: "payees",      href: "#" },
-    { id: "reports",     label: "Reports",         icon: "reports",     href: "#" },
-    { id: "admin",       label: "Administration",  icon: "admin",       href: "#", dividerBefore: true },
+    { id: "home", label: "Home", icon: "home", href: "#" },
+    { id: "bills", label: "Bills", icon: "bills", href: "#" },
+    { id: "payments", label: "Payments", icon: "payments", href: "#", hasDropdown: true },
+    { id: "cards", label: "Cards", icon: "cards", href: "#" },
+    { id: "expenses", label: "Expenses", icon: "expenses", href: "#" },
+    { id: "payees", label: "Payees", icon: "payees", href: "#" },
+    { id: "detect", label: "Detect", icon: "detect", href: "#" },
+    { id: "integrations", label: "Integrations", icon: "integrations", href: "#", hasDropdown: true },
+    { id: "reports", label: "Reports", icon: "reports", href: "#" },
+    { id: "superagents", label: "AI Superagents", icon: "superagents", href: "/", isNew: true },
+    { id: "admin", label: "Administration", icon: "admin", href: "#", hasDropdown: true },
   ];
 
   const isActive = (item: NavItem) => {
-    if (item.href === "/") return pathname === "/" || pathname.startsWith("/work-items") || pathname.startsWith("/agents");
+    if (item.href === "#") return false;
+    if (item.href === "/") {
+      return pathname === "/" || pathname.startsWith("/work-items") || pathname.startsWith("/agents");
+    }
     return pathname.startsWith(item.href);
   };
 
   return (
-    <aside className="w-14 flex-shrink-0 bg-white border-r border-tipalti-border flex flex-col h-full items-center py-4 sidebar-scroll overflow-y-auto">
-      {/* Tipalti logo */}
-      <div className="mb-6 flex-shrink-0">
-        <svg width="30" height="40" viewBox="0 0 30 40" fill="none">
+    <aside className="w-[220px] flex-shrink-0 bg-tipalti-navy-dark flex flex-col h-full py-3">
+      {/* Top bar: hamburger + logo */}
+      <div className="flex items-center gap-3 px-4 mb-5 flex-shrink-0">
+        <button className="text-white/70 hover:text-white transition-colors">
+          <HamburgerIcon />
+        </button>
+        <svg width="76" height="20" viewBox="0 0 120 32" fill="none">
           <path
-            d="M8 8C13 3, 22 2, 26 6"
+            d="M4 14C10 6, 22 4, 28 9"
             stroke="url(#sidebarSwoosh)"
-            strokeWidth="3.5"
+            strokeWidth="3"
             strokeLinecap="round"
             fill="none"
           />
           <text
-            x="7" y="35"
+            x="2" y="28"
             fontFamily="'Inter', system-ui, sans-serif"
-            fontWeight="800" fontSize="26" fontStyle="italic"
-            fill="#1A1A2E" letterSpacing="-0.5"
+            fontWeight="700" fontSize="20" fontStyle="italic"
+            fill="#FFFFFF" letterSpacing="-0.3"
           >
-            t
+            tipalti
           </text>
           <defs>
-            <linearGradient id="sidebarSwoosh" x1="8" y1="5" x2="26" y2="5" gradientUnits="userSpaceOnUse">
+            <linearGradient id="sidebarSwoosh" x1="4" y1="8" x2="28" y2="8" gradientUnits="userSpaceOnUse">
               <stop stopColor="#F5A623" />
               <stop offset="1" stopColor="#E8951A" />
             </linearGradient>
@@ -175,38 +179,29 @@ export default function Sidebar() {
       </div>
 
       {/* Nav items */}
-      <nav className="flex flex-col items-center gap-1 w-full px-2">
+      <nav className="flex flex-col gap-0.5 w-full px-2">
         {navItems.map((item) => {
           const active = isActive(item);
           return (
-            <div key={item.id} className="w-full">
-              {item.dividerBefore && (
-                <div className="border-t border-tipalti-border mx-1 my-2" />
-              )}
+            <div key={item.id} className="relative">
               <button
                 onClick={() => item.href !== "#" && router.push(item.href)}
-                title={item.label}
-                className={`relative w-full flex items-center justify-center h-9 rounded-lg transition-colors group ${
+                className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[13px] font-medium transition-colors ${
                   active
-                    ? "bg-tipalti-navy text-white"
-                    : "text-tipalti-text-muted hover:text-tipalti-text-primary hover:bg-tipalti-bg-light"
+                    ? "bg-tipalti-purple text-white"
+                    : "text-white/60 hover:text-white hover:bg-tipalti-navy-hover"
                 }`}
               >
-                {item.icon === "workforce" ? (
-                  <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M10 0C10 0 10.8 4 10 6C11.5 4.2 15 2 15 2C15 2 13 5.5 11.5 6.5C13.5 6 17 5.5 17 5.5C17 5.5 14 8 12 9C14 9.5 17 10.5 17 10.5C17 10.5 13.5 10.5 11.5 10C13 11 15 14.5 15 14.5C15 14.5 11.5 12.2 10 10.5C10.8 12.5 10 16.5 10 16.5C10 16.5 9.2 12.5 10 10.5C8.5 12.2 5 14.5 5 14.5C5 14.5 7 11 8.5 10C6.5 10.5 3 10.5 3 10.5C3 10.5 6 9.5 8 9C6 8 3 5.5 3 5.5C3 5.5 6.5 6 8.5 6.5C7 5.5 5 2 5 2C5 2 8.5 4.2 10 6C9.2 4 10 0 10 0Z" />
-                  </svg>
-                ) : (
-                  <NavIcon type={item.icon} />
+                <NavIcon type={item.icon} />
+                <span className="truncate">{item.label}</span>
+                {item.isNew && (
+                  <span className="text-[9px] font-semibold uppercase tracking-wide text-tipalti-orange bg-white/10 px-1.5 py-0.5 rounded flex-shrink-0">
+                    New
+                  </span>
                 )}
-                {item.badge && !active && (
-                  <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white" />
-                )}
-                {/* Tooltip */}
-                <span className="absolute left-full ml-2 px-2 py-1 rounded bg-tipalti-navy text-white text-[11px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50 shadow-lg">
-                  {item.label}
-                </span>
+                {item.hasDropdown && <DropdownChevron />}
               </button>
+              {item.id === "superagents" && <NavSuperagentsBubble />}
             </div>
           );
         })}

@@ -4,7 +4,7 @@ import { tasks } from "@/data/mockData";
 
 // ─── Computations ─────────────────────────────────────────────────────────────
 
-function computeKpis() {
+export function computeKpis() {
   const total = tasks.length;
   const inProgress = tasks.filter((t) => t.status === "in_progress").length;
   const processed = total - inProgress;

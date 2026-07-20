@@ -145,7 +145,7 @@ function GlobalChatPanel({
                 onSend();
               }
             }}
-            placeholder="Ask about AP Agent…"
+            placeholder="Ask about AP Superagent…"
             className="flex-1 text-[13px] bg-transparent text-tipalti-text-primary placeholder-tipalti-text-muted focus:outline-none"
           />
           <button
@@ -222,7 +222,7 @@ export default function Home() {
         await gcAiType(800);
         await gcPushMsg(
           "ai",
-          "Done. AP Agent instructions updated to v4. Changes are now active for new work items.",
+          "Done. AP Superagent instructions updated to v4. Changes are now active for new work items.",
           { viewInstructions: true }
         );
         setGcPending(false);
@@ -252,7 +252,7 @@ export default function Home() {
       const formattedRule = ruleText.charAt(0).toUpperCase() + ruleText.slice(1);
       await gcPushMsg(
         "ai",
-        `Got it. Here's the proposed update to the AP Agent's instructions:\n\n"${formattedRule}"\n\nNo conflicts detected with existing rules. This will become version ${nextVer}. Type "yes" to confirm.`
+        `Got it. Here's the proposed update to the AP Superagent's instructions:\n\n"${formattedRule}"\n\nNo conflicts detected with existing rules. This will become version ${nextVer}. Type "yes" to confirm.`
       );
       setGcPending(true);
     } else {
