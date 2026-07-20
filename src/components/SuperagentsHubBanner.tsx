@@ -38,7 +38,7 @@ export default function SuperagentsHubBanner() {
           </span>
         </div>
         <p className="text-[13px] text-tipalti-text-secondary mt-1 leading-relaxed">
-          Tipalti&apos;s AI Superagents automate your workflows end to end. AP Superagent is the first. As more launch, you&apos;ll manage them all right here.
+          AI Superagents automate your workflows end to end. AP Superagent is the first. More are on the way - you&apos;ll manage them all right here.
         </p>
       </div>
 
