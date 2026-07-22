@@ -340,7 +340,13 @@ export default function ExecutionFeed() {
     let result = tasks;
     if (timeFilter !== "all") {
       const days = timeFilter === "7d" ? 7 : 30;
-      const cutoff = new Date();
+      // Anchor the window to the most recent work item (so the demo data always
+      // shows under "Last 7 days" instead of requiring an "All time" switch).
+      const latest = tasks.reduce(
+        (max, t) => Math.max(max, new Date(t.processedAt).getTime()),
+        0
+      );
+      const cutoff = new Date(latest);
       cutoff.setDate(cutoff.getDate() - days);
       result = result.filter((t) => new Date(t.processedAt) >= cutoff);
     }

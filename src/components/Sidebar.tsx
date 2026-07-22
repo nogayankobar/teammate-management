@@ -134,7 +134,7 @@ export default function Sidebar() {
     { id: "detect", label: "Detect", icon: "detect", href: "#" },
     { id: "integrations", label: "Integrations", icon: "integrations", href: "#", hasDropdown: true },
     { id: "reports", label: "Reports", icon: "reports", href: "#" },
-    { id: "superagents", label: "AI Superagents", icon: "superagents", href: "/", isNew: true },
+    { id: "superagents", label: "AI Agents", icon: "superagents", href: "/", isNew: true },
     { id: "admin", label: "Administration", icon: "admin", href: "#", hasDropdown: true },
   ];
 

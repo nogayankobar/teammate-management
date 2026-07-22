@@ -31,14 +31,14 @@ export default function SuperagentsHubBanner() {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[13px] font-semibold text-tipalti-text-primary">
-            This is where all your AI Superagents will live
+            This is where all your AI Agents will live
           </span>
           <span className="text-[11px] font-medium text-tipalti-blue bg-tipalti-info-bg px-2 py-0.5 rounded-full flex-shrink-0">
             Coming soon
           </span>
         </div>
         <p className="text-[13px] text-tipalti-text-secondary mt-1 leading-relaxed">
-          AI Superagents automate your workflows end to end. AP Superagent is the first. More are on the way - you&apos;ll manage them all right here.
+          AI Agents automate your workflows end to end. AP Specialist is the first. More are on the way - you&apos;ll manage them all right here.
         </p>
       </div>
 

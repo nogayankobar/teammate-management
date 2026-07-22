@@ -16,9 +16,9 @@ export default function NavSuperagentsBubble() {
       />
 
       <div className="rounded-xl p-4 shadow-panel" style={{ backgroundColor: "#6E75E8" }}>
-        <p className="text-[13px] font-semibold text-white">New: AI Superagents</p>
+        <p className="text-[13px] font-semibold text-white">New: AI Agents</p>
         <p className="text-[12.5px] text-white/85 leading-relaxed mt-1.5">
-          See what your AI Superagents are doing and track their performance and accuracy over time - all in one place.
+          See what your AI Agents are doing and track their performance and accuracy over time - all in one place.
         </p>
         <div className="flex justify-end mt-3">
           <button

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import { BudgetWidget } from "@/components/TeammateHeader";
 import SuperagentsHubBanner from "@/components/SuperagentsHubBanner";
+import SuperagentsHero from "@/components/SuperagentsHero";
 import { computeKpis } from "@/components/KpiBar";
 import { superagents, teammate, type Superagent } from "@/data/mockData";
 
@@ -129,10 +130,14 @@ export default function SuperagentsOverviewPage() {
     procurement: false,
     expenses: false,
   });
+  const [variant, setVariant] = useState<"current" | "new">("new");
 
   const toggleAgent = (id: string) => {
     setEnabled((prev) => ({ ...prev, [id]: !prev[id] }));
   };
+
+  // Show every agent in both variants; the non-AP ones render as "Coming soon".
+  const visibleAgents = superagents;
 
   return (
     <div className="flex h-screen overflow-hidden bg-tipalti-bg-light">
@@ -189,18 +194,36 @@ export default function SuperagentsOverviewPage() {
           <div className="max-w-[1100px] mx-auto px-6 py-6">
             <div className="flex items-start justify-between gap-6 mb-6">
               <div>
-                <h1 className="text-[22px] font-bold text-tipalti-text-primary tracking-tight">AI Superagents</h1>
+                <h1 className="text-[22px] font-bold text-tipalti-text-primary tracking-tight">AI Agents</h1>
                 <p className="text-[13px] text-tipalti-text-muted mt-1">
-                  Manage and monitor your AI Superagents across finance operations.
+                  Manage and monitor your AI Agents across finance operations.
                 </p>
               </div>
-              <BudgetWidget />
+              <div className="flex items-center gap-3">
+                {/* Prototype-only: compare the current banner+grid against the new hero concept */}
+                <div className="flex items-center gap-0.5 bg-tipalti-bg-light border border-tipalti-border rounded-lg p-0.5">
+                  {(["current", "new"] as const).map((v) => (
+                    <button
+                      key={v}
+                      onClick={() => setVariant(v)}
+                      className={`text-[11px] font-semibold px-2.5 py-1 rounded-md transition-colors ${
+                        variant === v
+                          ? "bg-white text-tipalti-text-primary shadow-card"
+                          : "text-tipalti-text-muted hover:text-tipalti-text-primary"
+                      }`}
+                    >
+                      {v === "current" ? "Current" : "New concept"}
+                    </button>
+                  ))}
+                </div>
+                <BudgetWidget />
+              </div>
             </div>
 
-            <SuperagentsHubBanner />
+            {variant === "current" ? <SuperagentsHubBanner /> : <SuperagentsHero />}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 auto-rows-fr gap-4">
-              {superagents.map((agent) => (
+              {visibleAgents.map((agent) => (
                 <SuperagentTile
                   key={agent.id}
                   agent={agent}

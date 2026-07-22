@@ -58,8 +58,8 @@ export default function TeammateHeader({ activeTab, onTabChange }: TeammateHeade
       <div className="flex items-center gap-3 mb-5">
         <button
           onClick={() => router.push("/")}
-          aria-label="Back to AI Superagents"
-          title="Back to AI Superagents"
+          aria-label="Back to AI Agents"
+          title="Back to AI Agents"
           className="w-8 h-8 rounded-lg flex items-center justify-center text-tipalti-text-muted hover:text-tipalti-text-primary hover:bg-tipalti-bg-light transition-colors flex-shrink-0"
         >
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.6">

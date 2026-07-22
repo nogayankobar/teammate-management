@@ -88,7 +88,7 @@ export interface Superagent {
 export const superagents: Superagent[] = [
   {
     id: "ap",
-    name: "AP Superagent",
+    name: "AP Specialist",
     domain: "Accounts Payable",
     job: "Handles invoice processing end-to-end, capturing and validating invoices so they move through your workflow without manual intervention.",
     avatar: "AP",
@@ -96,19 +96,27 @@ export const superagents: Superagent[] = [
     href: "/agents/ap",
   },
   {
-    id: "procurement",
-    name: "Procurement Superagent",
-    domain: "Procurement",
-    avatar: "PR",
-    avatarColor: "#5243AA",
+    id: "expense-auditor",
+    name: "Expense Auditor",
+    domain: "Expenses",
+    avatar: "EA",
+    avatarColor: "#00875A",
     comingSoon: true,
   },
   {
-    id: "expenses",
-    name: "Expenses Superagent",
-    domain: "Expenses",
-    avatar: "EX",
-    avatarColor: "#36B37E",
+    id: "approval-coordinator",
+    name: "Approval Coordinator",
+    domain: "Accounts Payable",
+    avatar: "AC",
+    avatarColor: "#0065FF",
+    comingSoon: true,
+  },
+  {
+    id: "invoice-collector",
+    name: "Invoice Collector",
+    domain: "Accounts Payable",
+    avatar: "IC",
+    avatarColor: "#5243AA",
     comingSoon: true,
   },
 ];
@@ -123,7 +131,7 @@ export interface InstructionVersion {
 
 export const teammate: Teammate = {
   id: "ap-specialist-01",
-  name: "AP Superagent",
+  name: "AP Specialist",
   domain: "Accounts Payable",
   job: "Invoice Processing",
   avatar: "AP",
