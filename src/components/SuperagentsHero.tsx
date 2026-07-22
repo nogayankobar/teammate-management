@@ -1,7 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-
 function SparkleIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 20 20" fill="currentColor" className={className}>
@@ -11,8 +9,6 @@ function SparkleIcon({ className }: { className?: string }) {
 }
 
 export default function SuperagentsHero() {
-  const router = useRouter();
-
   return (
     <div
       className="relative overflow-hidden rounded-2xl shadow-panel mb-6 px-8 py-10 sm:px-12 sm:py-12"
@@ -56,16 +52,10 @@ export default function SuperagentsHero() {
         </p>
 
         <div className="flex flex-wrap items-center gap-5 mt-6">
-          <button
-            onClick={() => router.push("/agents/ap")}
-            className="text-[13px] font-semibold text-tipalti-navy bg-tipalti-orange hover:bg-tipalti-orange-hover px-5 py-2.5 rounded-lg transition-colors whitespace-nowrap"
-          >
-            View AP Specialist
-          </button>
           <a
             href="#"
             onClick={(e) => e.preventDefault()}
-            className="text-[13px] font-semibold text-white/85 hover:text-white transition-colors whitespace-nowrap underline underline-offset-4 decoration-white/30"
+            className="text-[13px] font-semibold text-tipalti-navy bg-tipalti-orange hover:bg-tipalti-orange-hover px-5 py-2.5 rounded-lg transition-colors whitespace-nowrap"
           >
             How AI Agents work
           </a>

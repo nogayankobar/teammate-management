@@ -310,7 +310,7 @@ export default function KpiBar() {
     <div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
-          label="Items handled"
+          label="Volume rate"
           value={`${k.volumeRate}%`}
           sub={`${k.handled} of ${k.total} items processed by the agent`}
           pts={4}
