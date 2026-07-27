@@ -39,3 +39,58 @@ body {
 .sidebar-scroll::-webkit-scrollbar-thumb {
   background: rgba(255,255,255,0.15);
 }
+
+/* ── Onboarding document animations ─────────────────────────────────────────── */
+
+/* Newly written instruction line — briefly highlights, then settles. */
+@keyframes docHighlight {
+  0%   { background-color: rgba(0, 82, 204, 0.12); }
+  70%  { background-color: rgba(0, 82, 204, 0.12); }
+  100% { background-color: transparent; }
+}
+.doc-new {
+  animation: docHighlight 2.2s ease-out;
+}
+
+/* Whole new section fading + sliding into place. */
+@keyframes docSectionEnter {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.doc-section-enter {
+  animation: docSectionEnter 0.45s ease-out;
+}
+
+/* Chat message entering. */
+@keyframes msgEnter {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.msg-enter {
+  animation: msgEnter 0.3s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .doc-new, .doc-section-enter, .msg-enter { animation: none; }
+}
+
+/* ── Canvas document editor (Gemini-canvas-style, kept simple) ───────────────── */
+.canvas-doc {
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: #5E6C84;
+  outline: none;
+}
+.canvas-doc h1 { font-size: 20px; font-weight: 700; color: #1A1A2E; margin: 20px 0 8px; line-height: 1.3; }
+.canvas-doc h2 { font-size: 15px; font-weight: 700; color: #1A1A2E; margin: 20px 0 8px; line-height: 1.35; }
+.canvas-doc h1:first-child, .canvas-doc h2:first-child, .canvas-doc p:first-child, .canvas-doc ul:first-child { margin-top: 0; }
+.canvas-doc p { margin: 8px 0; }
+.canvas-doc ul { margin: 8px 0; padding-left: 20px; list-style: disc; }
+.canvas-doc ol { margin: 8px 0; padding-left: 20px; list-style: decimal; }
+.canvas-doc li { margin: 5px 0; padding-left: 2px; }
+.canvas-doc strong, .canvas-doc b { color: #1A1A2E; font-weight: 600; }
+.canvas-doc:empty:before,
+.canvas-doc[data-placeholder]:empty:before {
+  content: attr(data-placeholder);
+  color: #97A0AF;
+}

@@ -48,7 +48,7 @@ export default function SuperagentsHero() {
 
         <p className="text-[14px] text-white/75 mt-3 leading-relaxed max-w-[540px]">
           AI Agents work your invoices, payments, and more end to end - full automation without losing visibility or control.
-          AP Specialist is live today, and every agent that follows will be managed right here.
+          AP Agent is live today, and every agent that follows will be managed right here.
         </p>
 
         <div className="flex flex-wrap items-center gap-5 mt-6">

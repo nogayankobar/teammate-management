@@ -88,7 +88,7 @@ export interface Superagent {
 export const superagents: Superagent[] = [
   {
     id: "ap",
-    name: "AP Specialist",
+    name: "AP Agent",
     domain: "Accounts Payable",
     job: "Handles invoice processing end-to-end, capturing and validating invoices so they move through your workflow without manual intervention.",
     avatar: "AP",
@@ -96,27 +96,39 @@ export const superagents: Superagent[] = [
     href: "/agents/ap",
   },
   {
-    id: "expense-auditor",
-    name: "Expense Auditor",
+    id: "expense",
+    name: "Expense Agent",
     domain: "Expenses",
-    avatar: "EA",
+    job: "Reviews employee expense reports and receipts against policy, flags exceptions, and routes reimbursements.",
+    avatar: "EX",
     avatarColor: "#00875A",
     comingSoon: true,
   },
   {
-    id: "approval-coordinator",
-    name: "Approval Coordinator",
-    domain: "Accounts Payable",
-    avatar: "AC",
-    avatarColor: "#0065FF",
+    id: "procurement",
+    name: "Procurement Agent",
+    domain: "Procurement",
+    job: "Owns the purchase order lifecycle - PO creation and approval, vendor onboarding, and supplier risk.",
+    avatar: "PR",
+    avatarColor: "#5243AA",
     comingSoon: true,
   },
   {
-    id: "invoice-collector",
-    name: "Invoice Collector",
-    domain: "Accounts Payable",
-    avatar: "IC",
-    avatarColor: "#5243AA",
+    id: "tax",
+    name: "Tax & Compliance Agent",
+    domain: "Tax & Compliance",
+    job: "Manages vendor tax documentation, VAT/GST capture, 1099 reporting, and withholding.",
+    avatar: "TX",
+    avatarColor: "#0747A6",
+    comingSoon: true,
+  },
+  {
+    id: "treasury",
+    name: "Treasury Agent",
+    domain: "Treasury & Cash",
+    job: "Forecasts outgoing cash needs, optimizes payment timing, and manages FX exposure.",
+    avatar: "TR",
+    avatarColor: "#008DA6",
     comingSoon: true,
   },
 ];
@@ -126,12 +138,12 @@ export interface InstructionVersion {
   content: string;
   publishedAt: string;
   publishedBy: string;
-  method: "manual" | "upload" | "chat";
+  method: "manual" | "upload" | "chat" | "onboarding";
 }
 
 export const teammate: Teammate = {
   id: "ap-specialist-01",
-  name: "AP Specialist",
+  name: "AP Agent",
   domain: "Accounts Payable",
   job: "Invoice Processing",
   avatar: "AP",

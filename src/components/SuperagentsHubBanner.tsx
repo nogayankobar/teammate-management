@@ -38,7 +38,7 @@ export default function SuperagentsHubBanner() {
           </span>
         </div>
         <p className="text-[13px] text-tipalti-text-secondary mt-1 leading-relaxed">
-          AI Agents automate your workflows end to end. AP Specialist is the first. More are on the way - you&apos;ll manage them all right here.
+          AI Agents automate your workflows end to end. AP Agent is the first. More are on the way - you&apos;ll manage them all right here.
         </p>
       </div>
 

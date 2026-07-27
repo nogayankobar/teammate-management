@@ -1,12 +1,167 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TeammateHeader from "@/components/TeammateHeader";
 import ExecutionFeed from "@/components/ExecutionFeed";
 import Instructions from "@/components/Instructions";
+import CanvasDoc from "@/components/CanvasDoc";
+import PermissionsModal from "@/components/PermissionsModal";
+import {
+  getDemoState,
+  setDemoState,
+  getOnboardingResult,
+  getOnboardingHistory,
+  revertOnboarding,
+  onOnboardingChange,
+  type DemoState,
+  type OnboardingResult,
+} from "@/lib/onboardingStore";
 
 type Tab = "feed" | "instructions";
+
+// ─── Empty feed (fresh agent, hasn't run yet) ──────────────────────────────────
+
+function FeedEmpty({ configured }: { configured: boolean }) {
+  return (
+    <div className="bg-white border border-tipalti-border rounded-xl shadow-card py-16 px-6 flex flex-col items-center text-center gap-2">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#C1C7D0" strokeWidth="1.4">
+        <rect x="3" y="4" width="18" height="16" rx="2" />
+        <path d="M3 9h18M8 14h8M8 17h5" strokeLinecap="round" />
+      </svg>
+      <h3 className="text-[14px] font-semibold text-tipalti-text-primary mt-1">No work items yet</h3>
+      <p className="text-[12.5px] text-tipalti-text-muted max-w-[320px] leading-relaxed">
+        {configured
+          ? "Your AP Agent is set up and will list every invoice it processes here."
+          : "Once you finish setup, every invoice the AP Agent processes will show up here."}
+      </p>
+    </div>
+  );
+}
+
+// ─── Setup CTA (fresh, no instructions yet) ─────────────────────────────────────
+
+function SetupCTA({ onStart }: { onStart: () => void }) {
+  return (
+    <div className="bg-white border border-tipalti-border rounded-xl shadow-card py-14 px-6 flex flex-col items-center text-center gap-3">
+      <div className="w-12 h-12 rounded-xl bg-tipalti-blue-light flex items-center justify-center">
+        <svg width="22" height="22" viewBox="0 0 14 14"><path d="M7 1L13 7L7 13L1 7L7 1Z" fill="#0052CC" /></svg>
+      </div>
+      <h3 className="text-[16px] font-bold text-tipalti-text-primary mt-1">Set up your AP Agent</h3>
+      <p className="text-[13px] text-tipalti-text-secondary max-w-[420px] leading-relaxed">
+        It's activated but hasn't started yet. Set it up with Tipalti AI — describe how your team
+        handles invoices or upload your AP policy, and it'll build its instructions together with you.
+      </p>
+      <button
+        onClick={onStart}
+        className="mt-2 flex items-center gap-2 text-[13px] font-semibold text-white bg-tipalti-blue rounded-md px-4 py-2 hover:bg-tipalti-navy-hover transition-colors shadow-sm"
+      >
+        Activate
+      </button>
+    </div>
+  );
+}
+
+// ─── Result view (fresh, instructions built via onboarding) ─────────────────────
+
+function ResultView({ result, onEdit }: { result: OnboardingResult; onEdit: () => void }) {
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const history = getOnboardingHistory();
+  const fmt = (iso: string) =>
+    new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <div className="flex items-center gap-2.5">
+          <span className="text-[11px] font-semibold text-tipalti-success bg-tipalti-success-bg px-2 py-0.5 rounded-full">
+            v{result.version}
+          </span>
+          <span className="text-[10px] font-semibold text-tipalti-blue bg-tipalti-blue-light px-1.5 py-0.5 rounded">
+            AI setup
+          </span>
+          <p className="text-[12px] text-tipalti-text-secondary">
+            Last saved with Tipalti AI by{" "}
+            <span className="font-medium text-tipalti-text-primary">{result.publishedBy}</span> · {fmt(result.publishedAt)}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Version history */}
+          <div className="relative">
+            <button
+              onClick={() => setHistoryOpen(!historyOpen)}
+              title="Version history"
+              className={`p-1.5 rounded-md border transition-colors ${
+                historyOpen
+                  ? "border-tipalti-blue bg-blue-50 text-tipalti-blue"
+                  : "border-tipalti-border bg-white text-tipalti-text-muted hover:text-tipalti-text-secondary hover:bg-tipalti-bg-light"
+              }`}
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.4">
+                <circle cx="7" cy="7" r="5.5" />
+                <path d="M7 4v3.5l2 1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+            {historyOpen && (
+              <>
+                <div className="fixed inset-0 z-10" onClick={() => setHistoryOpen(false)} />
+                <div className="absolute right-0 top-full mt-1.5 z-20 w-80 bg-white border border-tipalti-border rounded-lg shadow-lg overflow-hidden">
+                  <div className="px-4 py-2.5 border-b border-tipalti-border bg-tipalti-bg-light">
+                    <p className="text-[11px] font-semibold text-tipalti-text-muted uppercase tracking-wide">
+                      Version history
+                    </p>
+                  </div>
+                  <div className="divide-y divide-tipalti-border max-h-72 overflow-y-auto">
+                    {[...history].reverse().map((v) => (
+                      <div key={v.version} className="flex items-center gap-4 px-4 py-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className="text-[12px] font-semibold text-tipalti-text-primary">v{v.version}</span>
+                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-tipalti-blue-light text-tipalti-blue">
+                              AI setup
+                            </span>
+                            {v.version === result.version && (
+                              <span className="text-[10px] font-semibold text-tipalti-success bg-tipalti-success-bg px-1.5 py-0.5 rounded-full">
+                                Active
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[12px] text-tipalti-text-secondary">
+                            {fmt(v.publishedAt)} · {v.publishedBy}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => {
+                            revertOnboarding(v.version);
+                            setHistoryOpen(false);
+                          }}
+                          disabled={v.version === result.version}
+                          className="text-[12px] font-medium text-tipalti-blue hover:underline disabled:text-tipalti-text-muted disabled:no-underline disabled:cursor-default"
+                        >
+                          {v.version === result.version ? "Current" : "Revert"}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+          <button
+            onClick={onEdit}
+            className="flex items-center gap-1.5 text-[12px] font-semibold text-white bg-tipalti-blue rounded-md px-2.5 py-1.5 hover:bg-tipalti-navy-hover transition-colors shadow-sm"
+          >
+            <svg width="11" height="11" viewBox="0 0 14 14"><path d="M7 1L13 7L7 13L1 7L7 1Z" fill="#ffffff" /></svg>
+            Edit with AI
+          </button>
+        </div>
+      </div>
+      <div className="bg-[#F4F6F8] rounded-xl border border-tipalti-border p-6">
+        <CanvasDoc title="AP Agent" statusLabel={`v${result.version} · Active`} markdown={result.content} />
+      </div>
+    </div>
+  );
+}
 
 // ─── Global chat types ────────────────────────────────────────────────────────
 
@@ -145,7 +300,7 @@ function GlobalChatPanel({
                 onSend();
               }
             }}
-            placeholder="Ask about AP Specialist…"
+            placeholder="Ask about AP Agent…"
             className="flex-1 text-[13px] bg-transparent text-tipalti-text-primary placeholder-tipalti-text-muted focus:outline-none"
           />
           <button
@@ -171,7 +326,35 @@ function GlobalChatPanel({
 const CONFIRM_WORDS = ["yes", "ok", "sure", "confirm", "apply", "looks good", "good", "proceed", "go ahead", "do it"];
 
 export default function Home() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>("feed");
+
+  // Prototype demo state — fresh (first-time setup) vs configured (existing agent).
+  const [mounted, setMounted] = useState(false);
+  const [demo, setDemo] = useState<DemoState>("configured");
+  const [result, setResult] = useState<OnboardingResult | null>(null);
+  const [savedVersion, setSavedVersion] = useState<number | null>(null);
+  const [permOpen, setPermOpen] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("tab") === "instructions") setActiveTab("instructions");
+    const saved = params.get("saved");
+    if (saved) {
+      setSavedVersion(Number(saved));
+      // A just-saved onboarding means we're looking at the freshly set-up agent.
+      setDemoState("fresh");
+    }
+    const refresh = () => {
+      setDemo(getDemoState());
+      setResult(getOnboardingResult());
+    };
+    refresh();
+    return onOnboardingChange(refresh);
+  }, []);
+
+  const fresh = mounted && demo === "fresh";
 
   // Global chat state
   const [gcOpen, setGcOpen] = useState(false);
@@ -222,7 +405,7 @@ export default function Home() {
         await gcAiType(800);
         await gcPushMsg(
           "ai",
-          "Done. AP Specialist instructions updated to v4. Changes are now active for new work items.",
+          "Done. AP Agent instructions updated to v4. Changes are now active for new work items.",
           { viewInstructions: true }
         );
         setGcPending(false);
@@ -252,7 +435,7 @@ export default function Home() {
       const formattedRule = ruleText.charAt(0).toUpperCase() + ruleText.slice(1);
       await gcPushMsg(
         "ai",
-        `Got it. Here's the proposed update to the AP Specialist's instructions:\n\n"${formattedRule}"\n\nNo conflicts detected with existing rules. This will become version ${nextVer}. Type "yes" to confirm.`
+        `Got it. Here's the proposed update to the AP Agent's instructions:\n\n"${formattedRule}"\n\nNo conflicts detected with existing rules. This will become version ${nextVer}. Type "yes" to confirm.`
       );
       setGcPending(true);
     } else {
@@ -323,14 +506,45 @@ export default function Home() {
         {/* Page content */}
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-[1220px] mx-auto px-6 py-6">
-            <TeammateHeader activeTab={activeTab} onTabChange={setActiveTab} />
+            {savedVersion !== null && fresh && (
+              <div className="mb-4 flex items-center gap-2.5 bg-tipalti-success-bg border border-tipalti-success/30 rounded-lg px-4 py-2.5">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#36B37E" strokeWidth="2.2">
+                  <path d="M5 12.5l4.5 4.5L19 7" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <p className="text-[13px] text-tipalti-text-primary">
+                  <span className="font-semibold">Instructions saved.</span> Your AP Agent is set up and ready to start processing invoices.
+                </p>
+              </div>
+            )}
+
+            <TeammateHeader activeTab={activeTab} onTabChange={setActiveTab} fresh={fresh} />
             <div className="mt-6">
-              {activeTab === "feed" && <ExecutionFeed />}
-              {activeTab === "instructions" && <Instructions />}
+              {activeTab === "feed" &&
+                (fresh ? <FeedEmpty configured={!!result} /> : <ExecutionFeed />)}
+              {activeTab === "instructions" &&
+                (!fresh ? (
+                  <Instructions />
+                ) : result ? (
+                  <ResultView
+                    result={result}
+                    onEdit={() => router.push("/agents/ap/onboarding?mode=edit")}
+                  />
+                ) : (
+                  <SetupCTA onStart={() => setPermOpen(true)} />
+                ))}
             </div>
           </div>
         </div>
       </main>
+
+      <PermissionsModal
+        open={permOpen}
+        onClose={() => setPermOpen(false)}
+        onContinue={() => {
+          setPermOpen(false);
+          router.push("/agents/ap/onboarding");
+        }}
+      />
 
       {/* Global chat panel */}
       {gcOpen && (

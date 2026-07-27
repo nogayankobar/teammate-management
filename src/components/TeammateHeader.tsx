@@ -45,16 +45,19 @@ export function BudgetWidget() {
 interface TeammateHeaderProps {
   activeTab: Tab;
   onTabChange: (tab: Tab) => void;
+  fresh?: boolean;
 }
 
-export default function TeammateHeader({ activeTab, onTabChange }: TeammateHeaderProps) {
+export default function TeammateHeader({ activeTab, onTabChange, fresh }: TeammateHeaderProps) {
   const router = useRouter();
 
   return (
     <div>
-      <div className="flex justify-end mb-3">
-        <BudgetWidget />
-      </div>
+      {!fresh && (
+        <div className="flex justify-end mb-3">
+          <BudgetWidget />
+        </div>
+      )}
       <div className="flex items-center gap-3 mb-5">
         <button
           onClick={() => router.push("/")}
@@ -73,17 +76,26 @@ export default function TeammateHeader({ activeTab, onTabChange }: TeammateHeade
           <span className="text-white font-bold text-sm">{teammate.avatar}</span>
         </div>
         <div>
-          <h1 className="text-lg font-bold text-tipalti-text-primary">{teammate.name}</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-lg font-bold text-tipalti-text-primary">{teammate.name}</h1>
+            {fresh && (
+              <span className="text-[11px] font-semibold text-tipalti-warning bg-tipalti-warning-bg px-2 py-0.5 rounded-full">
+                Not yet activated
+              </span>
+            )}
+          </div>
           <p className="text-xs text-tipalti-text-muted mt-0.5">
             {teammate.domain} &middot; {teammate.job}
           </p>
         </div>
       </div>
 
-      {/* KPIs */}
-      <div className="my-5">
-        <KpiBar />
-      </div>
+      {/* KPIs — only once the agent is set up and has run */}
+      {!fresh && (
+        <div className="my-5">
+          <KpiBar />
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="border-b border-tipalti-border">

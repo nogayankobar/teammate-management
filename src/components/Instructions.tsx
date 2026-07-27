@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useRef, useEffect, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { instructionVersions, InstructionVersion } from "@/data/mockData";
+import { getOnboardingResult } from "@/lib/onboardingStore";
 
 // ─── Validation ───────────────────────────────────────────────────────────────
 
@@ -64,9 +66,10 @@ function detectConflictPairs(content: string): Array<[string, string]> {
 
 function MethodBadge({ method }: { method: InstructionVersion["method"] }) {
   const cfg = {
-    manual: { label: "Manual",      className: "bg-gray-100 text-gray-600" },
-    upload: { label: "File upload", className: "bg-tipalti-info-bg text-tipalti-info" },
-    chat:   { label: "Chat",        className: "bg-tipalti-purple-bg text-tipalti-purple" },
+    manual:     { label: "Manual",      className: "bg-gray-100 text-gray-600" },
+    upload:     { label: "File upload", className: "bg-tipalti-info-bg text-tipalti-info" },
+    chat:       { label: "Chat",        className: "bg-tipalti-purple-bg text-tipalti-purple" },
+    onboarding: { label: "AI setup",    className: "bg-tipalti-blue-light text-tipalti-blue" },
   };
   const c = cfg[method];
   return <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${c.className}`}>{c.label}</span>;
@@ -338,6 +341,7 @@ function ChatPanel({
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function Instructions() {
+  const router = useRouter();
   const activeVersion = instructionVersions[0];
 
   // Instructions state
@@ -362,6 +366,23 @@ export default function Instructions() {
   const [pendingContent, setPendingContent] = useState<string | null>(null);
   const [pendingMethod, setPendingMethod]   = useState<InstructionVersion["method"]>("chat");
   const msgId = useRef(0);
+
+  // If the onboarding flow produced instructions, surface them as the newest
+  // version on top of the existing history (non-destructive — v3 stays in history).
+  useEffect(() => {
+    const r = getOnboardingResult();
+    if (!r) return;
+    const merged: InstructionVersion = {
+      version: instructionVersions[0].version + r.version,
+      content: r.content,
+      publishedAt: r.publishedAt,
+      publishedBy: r.publishedBy,
+      method: "onboarding",
+    };
+    setVersions([merged, ...instructionVersions]);
+    setPublished(merged);
+    setContent(merged.content);
+  }, []);
 
   // Conflict detection
   const conflictPairs = useMemo(() => detectConflictPairs(content), [content]);
@@ -757,43 +778,15 @@ export default function Instructions() {
                     )}
                   </div>
 
-                  {/* Ask AI */}
+                  {/* Edit with AI — full-screen onboarding flow */}
                   <button
-                    onClick={() => {
-                      setChatMessages([]);
-                      setChatInput("");
-                      setPendingContent(null);
-                      setChatOpen(true);
-                    }}
-                    className="flex items-center gap-1.5 text-[12px] font-medium text-tipalti-blue border border-tipalti-blue rounded-md px-2.5 py-1.5 bg-white hover:bg-blue-50 transition-colors"
+                    onClick={() => router.push("/agents/ap/onboarding?mode=edit")}
+                    className="flex items-center gap-1.5 text-[12px] font-semibold text-white bg-tipalti-blue rounded-md px-2.5 py-1.5 hover:bg-tipalti-navy-hover transition-colors shadow-sm"
                   >
                     <svg width="11" height="11" viewBox="0 0 14 14" style={{ flexShrink: 0 }}>
-                      <path d="M7 1L13 7L7 13L1 7L7 1Z" fill="#0065FF" />
+                      <path d="M7 1L13 7L7 13L1 7L7 1Z" fill="#ffffff" />
                     </svg>
-                    Ask AI
-                  </button>
-
-                  {/* Upload file */}
-                  <button
-                    onClick={() => fileRef.current?.click()}
-                    className="flex items-center gap-1.5 text-[12px] font-medium text-tipalti-text-secondary border border-tipalti-border rounded-md px-2.5 py-1.5 bg-white hover:bg-tipalti-bg-light transition-colors"
-                  >
-                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.4">
-                      <path d="M6.5 8.5V2.5M4 5l2.5-2.5L9 5" strokeLinecap="round" strokeLinejoin="round" />
-                      <path d="M1.5 10.5h10" strokeLinecap="round" />
-                    </svg>
-                    Upload file
-                  </button>
-
-                  {/* Edit */}
-                  <button
-                    onClick={handleEnterEdit}
-                    className="flex items-center gap-1.5 text-[12px] font-semibold text-white bg-tipalti-blue rounded-md px-3 py-1.5 hover:bg-tipalti-blue-hover transition-colors shadow-sm"
-                  >
-                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.4">
-                      <path d="M9 2L11 4L5 10H3V8L9 2Z" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    Edit
+                    Edit with AI
                   </button>
                 </div>
               </>
@@ -834,7 +827,7 @@ export default function Instructions() {
                 onChange={(e) => handleChange(e.target.value)}
                 className="flex-1 w-full px-6 py-5 text-sm text-tipalti-text-primary leading-relaxed resize-none focus:outline-none"
                 style={{ minHeight: "calc(100vh - 480px)" }}
-                placeholder={"Add instructions for the AP Specialist. For example:\n- Figma invoices → always route to VP Design\n- Escalate any new vendor regardless of amount"}
+                placeholder={"Add instructions for the AP Agent. For example:\n- Figma invoices → always route to VP Design\n- Escalate any new vendor regardless of amount"}
                 spellCheck={false}
                 autoFocus
               />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import { BudgetWidget } from "@/components/TeammateHeader";
@@ -8,6 +8,14 @@ import SuperagentsHubBanner from "@/components/SuperagentsHubBanner";
 import SuperagentsHero from "@/components/SuperagentsHero";
 import { computeKpis } from "@/components/KpiBar";
 import { superagents, teammate, type Superagent } from "@/data/mockData";
+import PermissionsModal from "@/components/PermissionsModal";
+import {
+  getDemoState,
+  setDemoState,
+  getOnboardingResult,
+  resetOnboardingDemo,
+  onOnboardingChange,
+} from "@/lib/onboardingStore";
 
 // ─── Toggle switch ────────────────────────────────────────────────────────────
 
@@ -50,10 +58,16 @@ function SuperagentTile({
   agent,
   enabled,
   onToggle,
+  fresh,
+  hasResult,
+  onActivate,
 }: {
   agent: Superagent;
   enabled: boolean;
   onToggle: () => void;
+  fresh?: boolean;
+  hasResult?: boolean;
+  onActivate?: () => void;
 }) {
   const router = useRouter();
   const disabled = !!agent.comingSoon;
@@ -62,6 +76,20 @@ function SuperagentTile({
   // Mock data only models one live agent today - reuse its status + KPI math for the tile.
   const live = agent.id === "ap";
   const { automationRate, processed, total } = live ? computeKpis() : { automationRate: 0, processed: 0, total: 0 };
+
+  // In the "new activation" demo state, the AP agent starts off and is onboarded on activation.
+  const freshAp = live && !!fresh;
+  const needsSetup = freshAp && !hasResult;
+
+  // Fresh AP reflects real activation: off until activated, and flipping it on begins activation.
+  const checked = freshAp ? !!hasResult : enabled;
+  const handleToggle = () => {
+    if (needsSetup) {
+      onActivate?.();
+      return;
+    }
+    onToggle();
+  };
 
   return (
     <div
@@ -84,7 +112,7 @@ function SuperagentTile({
           </div>
         </div>
         <div onClick={(e) => e.stopPropagation()}>
-          <ToggleSwitch checked={enabled} disabled={disabled} onChange={onToggle} />
+          <ToggleSwitch checked={checked} disabled={disabled} onChange={handleToggle} />
         </div>
       </div>
 
@@ -92,11 +120,23 @@ function SuperagentTile({
         <div className="flex items-center gap-1.5 -mt-1">
           <span
             className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
-              teammate.status === "active" ? "bg-tipalti-success" : "bg-tipalti-text-muted"
+              freshAp
+                ? needsSetup
+                  ? "bg-tipalti-warning"
+                  : "bg-tipalti-success"
+                : teammate.status === "active"
+                ? "bg-tipalti-success"
+                : "bg-tipalti-text-muted"
             }`}
           />
           <span className="text-[11.5px] font-medium text-tipalti-text-secondary">
-            {teammate.status === "active" ? "Active" : `Last active ${teammate.lastActive}`}
+            {freshAp
+              ? needsSetup
+                ? "Not yet activated"
+                : "Ready · awaiting first run"
+              : teammate.status === "active"
+              ? "Active"
+              : `Last active ${teammate.lastActive}`}
           </span>
         </div>
       )}
@@ -109,7 +149,21 @@ function SuperagentTile({
             Coming soon
           </span>
         )}
-        {live && (
+        {live && freshAp && needsSetup && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onActivate?.();
+            }}
+            className="flex items-center gap-1.5 text-[12px] font-semibold text-white bg-tipalti-blue rounded-md px-3 py-1.5 hover:bg-tipalti-navy-hover transition-colors shadow-sm"
+          >
+            Activate
+          </button>
+        )}
+        {live && freshAp && !needsSetup && (
+          <span className="text-[11px] text-tipalti-text-muted">Configured · no activity yet</span>
+        )}
+        {live && !freshAp && (
           <div className="flex items-baseline gap-1.5">
             <span className="text-[18px] font-bold text-tipalti-text-primary leading-none">{automationRate}%</span>
             <span className="text-[11px] text-tipalti-text-muted">
@@ -131,6 +185,20 @@ export default function SuperagentsOverviewPage() {
     expenses: false,
   });
   const [variant, setVariant] = useState<"current" | "new">("new");
+  const router = useRouter();
+  const [permOpen, setPermOpen] = useState(false);
+
+  // Prototype demo state — mirrors the AP page so the list reflects setup status.
+  const [fresh, setFresh] = useState(false);
+  const [hasResult, setHasResult] = useState(false);
+  useEffect(() => {
+    const refresh = () => {
+      setFresh(getDemoState() === "fresh");
+      setHasResult(!!getOnboardingResult());
+    };
+    refresh();
+    return onOnboardingChange(refresh);
+  }, []);
 
   const toggleAgent = (id: string) => {
     setEnabled((prev) => ({ ...prev, [id]: !prev[id] }));
@@ -200,6 +268,38 @@ export default function SuperagentsOverviewPage() {
                 </p>
               </div>
               <div className="flex items-center gap-3">
+                {/* Prototype-only: switch AP between already-active and a fresh activation+onboarding */}
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-tipalti-text-muted">
+                    AP demo
+                  </span>
+                  <div className="flex items-center gap-0.5 bg-tipalti-bg-light border border-tipalti-border rounded-lg p-0.5">
+                    {([
+                      { id: "fresh", label: "New activation" },
+                      { id: "configured", label: "Already active" },
+                    ] as const).map((v) => (
+                      <button
+                        key={v.id}
+                        onClick={() => setDemoState(v.id)}
+                        className={`text-[11px] font-semibold px-2.5 py-1 rounded-md transition-colors ${
+                          (fresh ? "fresh" : "configured") === v.id
+                            ? "bg-white text-tipalti-text-primary shadow-card"
+                            : "text-tipalti-text-muted hover:text-tipalti-text-primary"
+                        }`}
+                      >
+                        {v.label}
+                      </button>
+                    ))}
+                  </div>
+                  {fresh && hasResult && (
+                    <button
+                      onClick={resetOnboardingDemo}
+                      className="text-[11px] font-medium text-tipalti-text-muted hover:text-tipalti-danger transition-colors"
+                    >
+                      Reset
+                    </button>
+                  )}
+                </div>
                 {/* Prototype-only: compare the current banner+grid against the new hero concept */}
                 <div className="flex items-center gap-0.5 bg-tipalti-bg-light border border-tipalti-border rounded-lg p-0.5">
                   {(["current", "new"] as const).map((v) => (
@@ -229,12 +329,24 @@ export default function SuperagentsOverviewPage() {
                   agent={agent}
                   enabled={!!enabled[agent.id]}
                   onToggle={() => toggleAgent(agent.id)}
+                  fresh={fresh}
+                  hasResult={hasResult}
+                  onActivate={() => setPermOpen(true)}
                 />
               ))}
             </div>
           </div>
         </div>
       </main>
+
+      <PermissionsModal
+        open={permOpen}
+        onClose={() => setPermOpen(false)}
+        onContinue={() => {
+          setPermOpen(false);
+          router.push("/agents/ap/onboarding");
+        }}
+      />
     </div>
   );
 }
