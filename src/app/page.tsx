@@ -118,19 +118,22 @@ function SuperagentTile({
     <div
       onClick={clickable ? () => router.push(agent.href!) : undefined}
       className={`bg-white border border-tipalti-border rounded-xl shadow-card p-5 flex flex-col gap-4 min-h-[188px] transition-colors ${
-        disabled || locked ? "opacity-60" : ""
+        disabled ? "opacity-60" : ""
       } ${clickable ? "cursor-pointer hover:border-tipalti-blue" : ""} ${locked ? "cursor-not-allowed" : ""}`}
     >
+      {/* Locked mutes its own content via color, not opacity - opacity on this
+          container would create a stacking context and trap the tooltip below,
+          clipped behind the next card. */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
           <div
             className="w-11 h-11 rounded-xl flex items-center justify-center shadow-card flex-shrink-0"
-            style={{ backgroundColor: agent.avatarColor }}
+            style={{ backgroundColor: locked ? "#97A0AF" : agent.avatarColor }}
           >
             <span className="text-white font-bold text-sm">{agent.avatar}</span>
           </div>
           <div className="min-w-0">
-            <h3 className="text-[14px] font-bold text-tipalti-text-primary truncate">{agent.name}</h3>
+            <h3 className={`text-[14px] font-bold truncate ${locked ? "text-tipalti-text-muted" : "text-tipalti-text-primary"}`}>{agent.name}</h3>
             <p className="text-[12px] text-tipalti-text-muted mt-0.5 truncate">{agent.domain}</p>
           </div>
         </div>
@@ -174,7 +177,9 @@ function SuperagentTile({
         </div>
       )}
 
-      {agent.job && <p className="text-[12px] text-tipalti-text-secondary leading-relaxed">{agent.job}</p>}
+      {agent.job && (
+        <p className={`text-[12px] leading-relaxed ${locked ? "text-tipalti-text-muted" : "text-tipalti-text-secondary"}`}>{agent.job}</p>
+      )}
 
       <div className="mt-auto flex items-center justify-between gap-2">
         {locked && (
