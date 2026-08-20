@@ -17,6 +17,25 @@ import {
   onOnboardingChange,
 } from "@/lib/onboardingStore";
 
+// ─── Lock icon + hover tooltip ─────────────────────────────────────────────────
+
+function LockIcon({ className }: { className?: string }) {
+  return (
+    <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.3" className={className}>
+      <rect x="2.5" y="5.5" width="7" height="5" rx="1" />
+      <path d="M4 5.5V3.8a2 2 0 014 0V5.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function LockedTooltip({ text }: { text: string }) {
+  return (
+    <span className="pointer-events-none absolute left-0 top-full mt-1.5 w-56 rounded-lg bg-tipalti-navy text-white text-[11px] leading-snug px-2.5 py-2 opacity-0 group-hover/locked:opacity-100 transition-opacity duration-150 z-[60] shadow-lg">
+      {text}
+    </span>
+  );
+}
+
 // ─── Toggle switch ────────────────────────────────────────────────────────────
 
 function ToggleSwitch({
@@ -61,6 +80,7 @@ function SuperagentTile({
   fresh,
   hasResult,
   onActivate,
+  locked,
 }: {
   agent: Superagent;
   enabled: boolean;
@@ -68,10 +88,13 @@ function SuperagentTile({
   fresh?: boolean;
   hasResult?: boolean;
   onActivate?: () => void;
+  locked?: boolean;
 }) {
   const router = useRouter();
   const disabled = !!agent.comingSoon;
-  const clickable = !disabled && !!agent.href;
+  // Locked (agent permission granted, domain permission not) is not clickable either -
+  // same as Not active / Coming soon. Requirement 2's "only Live opens the page" rule.
+  const clickable = !disabled && !locked && !!agent.href;
 
   // Mock data only models one live agent today - reuse its status + KPI math for the tile.
   const live = agent.id === "ap";
@@ -95,8 +118,8 @@ function SuperagentTile({
     <div
       onClick={clickable ? () => router.push(agent.href!) : undefined}
       className={`bg-white border border-tipalti-border rounded-xl shadow-card p-5 flex flex-col gap-4 min-h-[188px] transition-colors ${
-        disabled ? "opacity-60" : ""
-      } ${clickable ? "cursor-pointer hover:border-tipalti-blue" : ""}`}
+        disabled || locked ? "opacity-60" : ""
+      } ${clickable ? "cursor-pointer hover:border-tipalti-blue" : ""} ${locked ? "cursor-not-allowed" : ""}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
@@ -112,11 +135,21 @@ function SuperagentTile({
           </div>
         </div>
         <div onClick={(e) => e.stopPropagation()}>
-          <ToggleSwitch checked={checked} disabled={disabled} onChange={handleToggle} />
+          {locked ? (
+            <span
+              className="relative inline-flex group/locked cursor-help text-tipalti-text-muted"
+              tabIndex={0}
+            >
+              <LockIcon className="w-4 h-4" />
+              <LockedTooltip text="You don't have permission to view this agent's data. Contact your admin." />
+            </span>
+          ) : (
+            <ToggleSwitch checked={checked} disabled={disabled} onChange={handleToggle} />
+          )}
         </div>
       </div>
 
-      {live && (
+      {live && !locked && (
         <div className="flex items-center gap-1.5 -mt-1">
           <span
             className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
@@ -144,12 +177,19 @@ function SuperagentTile({
       {agent.job && <p className="text-[12px] text-tipalti-text-secondary leading-relaxed">{agent.job}</p>}
 
       <div className="mt-auto flex items-center justify-between gap-2">
-        {agent.comingSoon && (
+        {locked && (
+          <span className="relative inline-flex group/locked items-center w-fit gap-1 px-2 py-1 rounded-full bg-tipalti-warning-bg border border-tipalti-warning/30 text-[11px] font-medium text-tipalti-warning cursor-help">
+            <LockIcon className="w-2.5 h-2.5" />
+            Locked
+            <LockedTooltip text="You don't have permission to view this agent's data. Contact your admin." />
+          </span>
+        )}
+        {!locked && agent.comingSoon && (
           <span className="inline-flex items-center w-fit px-2 py-1 rounded-full bg-tipalti-bg-light border border-tipalti-border text-[11px] font-medium text-tipalti-text-muted">
             Coming soon
           </span>
         )}
-        {live && freshAp && needsSetup && (
+        {!locked && live && freshAp && needsSetup && (
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -160,10 +200,10 @@ function SuperagentTile({
             Activate
           </button>
         )}
-        {live && freshAp && !needsSetup && (
+        {!locked && live && freshAp && !needsSetup && (
           <span className="text-[11px] text-tipalti-text-muted">Configured · no activity yet</span>
         )}
-        {live && !freshAp && (
+        {!locked && live && !freshAp && (
           <div className="flex items-baseline gap-1.5">
             <span className="text-[18px] font-bold text-tipalti-text-primary leading-none">{automationRate}%</span>
             <span className="text-[11px] text-tipalti-text-muted">
@@ -187,6 +227,9 @@ export default function SuperagentsOverviewPage() {
   const [variant, setVariant] = useState<"current" | "new">("new");
   const router = useRouter();
   const [permOpen, setPermOpen] = useState(false);
+  // Prototype-only: demo the "Locked" card state (agent permission granted,
+  // domain permission not) - Requirement 2/3 in the PRD.
+  const [domainPermission, setDomainPermission] = useState<"granted" | "denied">("granted");
 
   // Prototype demo state — mirrors the AP page so the list reflects setup status.
   const [fresh, setFresh] = useState(false);
@@ -300,6 +343,30 @@ export default function SuperagentsOverviewPage() {
                     </button>
                   )}
                 </div>
+                {/* Prototype-only: demo the Locked card state (domain permission missing) */}
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-tipalti-text-muted">
+                    Domain permission
+                  </span>
+                  <div className="flex items-center gap-0.5 bg-tipalti-bg-light border border-tipalti-border rounded-lg p-0.5">
+                    {([
+                      { id: "granted", label: "Granted" },
+                      { id: "denied", label: "Denied" },
+                    ] as const).map((v) => (
+                      <button
+                        key={v.id}
+                        onClick={() => setDomainPermission(v.id)}
+                        className={`text-[11px] font-semibold px-2.5 py-1 rounded-md transition-colors ${
+                          domainPermission === v.id
+                            ? "bg-white text-tipalti-text-primary shadow-card"
+                            : "text-tipalti-text-muted hover:text-tipalti-text-primary"
+                        }`}
+                      >
+                        {v.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 {/* Prototype-only: compare the current banner+grid against the new hero concept */}
                 <div className="flex items-center gap-0.5 bg-tipalti-bg-light border border-tipalti-border rounded-lg p-0.5">
                   {(["current", "new"] as const).map((v) => (
@@ -332,6 +399,7 @@ export default function SuperagentsOverviewPage() {
                   fresh={fresh}
                   hasResult={hasResult}
                   onActivate={() => setPermOpen(true)}
+                  locked={agent.id === "ap" && !agent.comingSoon && domainPermission === "denied"}
                 />
               ))}
             </div>
