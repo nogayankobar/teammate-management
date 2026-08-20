@@ -138,17 +138,7 @@ function SuperagentTile({
           </div>
         </div>
         <div onClick={(e) => e.stopPropagation()}>
-          {locked ? (
-            <span
-              className="relative inline-flex group/locked cursor-help text-tipalti-text-muted"
-              tabIndex={0}
-            >
-              <LockIcon className="w-4 h-4" />
-              <LockedTooltip text="You don't have permission to view this agent's data. Contact your admin." />
-            </span>
-          ) : (
-            <ToggleSwitch checked={checked} disabled={disabled} onChange={handleToggle} />
-          )}
+          <ToggleSwitch checked={checked} disabled={disabled || locked} onChange={handleToggle} />
         </div>
       </div>
 
@@ -183,7 +173,7 @@ function SuperagentTile({
 
       <div className="mt-auto flex items-center justify-between gap-2">
         {locked && (
-          <span className="relative inline-flex group/locked items-center w-fit gap-1 px-2 py-1 rounded-full bg-tipalti-warning-bg border border-tipalti-warning/30 text-[11px] font-medium text-tipalti-warning cursor-help">
+          <span className="relative inline-flex group/locked items-center w-fit gap-1 px-2 py-1 rounded-full bg-tipalti-bg-light border border-tipalti-border text-[11px] font-medium text-tipalti-text-muted cursor-help">
             <LockIcon className="w-2.5 h-2.5" />
             Locked
             <LockedTooltip text="You don't have permission to view this agent's data. Contact your admin." />
