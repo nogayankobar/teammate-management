@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import { BudgetWidget } from "@/components/TeammateHeader";
+import PrototypeControls, { Segmented, CreditsOverageControl } from "@/components/PrototypeControls";
 import SuperagentsHubBanner from "@/components/SuperagentsHubBanner";
 import SuperagentsHero from "@/components/SuperagentsHero";
 import { computeKpis } from "@/components/KpiBar";
@@ -299,88 +300,59 @@ export default function SuperagentsOverviewPage() {
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-[1100px] mx-auto px-6 py-6">
             <div className="flex items-start justify-between gap-6 mb-6">
-              <div>
-                <h1 className="text-[22px] font-bold text-tipalti-text-primary tracking-tight">AI Agents</h1>
+              <div className="flex-shrink-0">
+                <h1 className="text-[22px] font-bold text-tipalti-text-primary tracking-tight whitespace-nowrap">AI Agents</h1>
                 <p className="text-[13px] text-tipalti-text-muted mt-1">
                   Manage and monitor your AI Agents across finance operations.
                 </p>
               </div>
-              <div className="flex items-center gap-3">
-                {/* Prototype-only: switch AP between already-active and a fresh activation+onboarding */}
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-tipalti-text-muted">
-                    AP demo
-                  </span>
-                  <div className="flex items-center gap-0.5 bg-tipalti-bg-light border border-tipalti-border rounded-lg p-0.5">
-                    {([
-                      { id: "fresh", label: "New activation" },
-                      { id: "configured", label: "Already active" },
-                    ] as const).map((v) => (
-                      <button
-                        key={v.id}
-                        onClick={() => setDemoState(v.id)}
-                        className={`text-[11px] font-semibold px-2.5 py-1 rounded-md transition-colors ${
-                          (fresh ? "fresh" : "configured") === v.id
-                            ? "bg-white text-tipalti-text-primary shadow-card"
-                            : "text-tipalti-text-muted hover:text-tipalti-text-primary"
-                        }`}
-                      >
-                        {v.label}
-                      </button>
-                    ))}
-                  </div>
-                  {fresh && hasResult && (
-                    <button
-                      onClick={resetOnboardingDemo}
-                      className="text-[11px] font-medium text-tipalti-text-muted hover:text-tipalti-danger transition-colors"
-                    >
-                      Reset
-                    </button>
-                  )}
-                </div>
-                {/* Prototype-only: demo the Locked card state (domain permission missing) */}
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-tipalti-text-muted">
-                    Domain permission
-                  </span>
-                  <div className="flex items-center gap-0.5 bg-tipalti-bg-light border border-tipalti-border rounded-lg p-0.5">
-                    {([
-                      { id: "granted", label: "Granted" },
-                      { id: "denied", label: "Denied" },
-                    ] as const).map((v) => (
-                      <button
-                        key={v.id}
-                        onClick={() => setDomainPermission(v.id)}
-                        className={`text-[11px] font-semibold px-2.5 py-1 rounded-md transition-colors ${
-                          domainPermission === v.id
-                            ? "bg-white text-tipalti-text-primary shadow-card"
-                            : "text-tipalti-text-muted hover:text-tipalti-text-primary"
-                        }`}
-                      >
-                        {v.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                {/* Prototype-only: compare the current banner+grid against the new hero concept */}
-                <div className="flex items-center gap-0.5 bg-tipalti-bg-light border border-tipalti-border rounded-lg p-0.5">
-                  {(["current", "new"] as const).map((v) => (
-                    <button
-                      key={v}
-                      onClick={() => setVariant(v)}
-                      className={`text-[11px] font-semibold px-2.5 py-1 rounded-md transition-colors ${
-                        variant === v
-                          ? "bg-white text-tipalti-text-primary shadow-card"
-                          : "text-tipalti-text-muted hover:text-tipalti-text-primary"
-                      }`}
-                    >
-                      {v === "current" ? "Current" : "New concept"}
-                    </button>
-                  ))}
-                </div>
-                <BudgetWidget />
-              </div>
             </div>
+
+            <div className="flex justify-end mb-4">
+              <BudgetWidget />
+            </div>
+
+            {/* Prototype-only demo pickers */}
+            <PrototypeControls>
+              <Segmented
+                label="AP demo"
+                value={fresh ? "fresh" : "configured"}
+                options={[
+                  { id: "fresh", label: "New activation" },
+                  { id: "configured", label: "Already active" },
+                ] as const}
+                onChange={setDemoState}
+              />
+              {fresh && hasResult && (
+                <div className="flex justify-end">
+                  <button
+                    onClick={resetOnboardingDemo}
+                    className="text-[11px] font-medium text-tipalti-text-muted hover:text-tipalti-danger transition-colors"
+                  >
+                    Reset onboarding
+                  </button>
+                </div>
+              )}
+              <Segmented
+                label="Domain permission"
+                value={domainPermission}
+                options={[
+                  { id: "granted", label: "Granted" },
+                  { id: "denied", label: "Denied" },
+                ] as const}
+                onChange={setDomainPermission}
+              />
+              <Segmented
+                label="Hero"
+                value={variant}
+                options={[
+                  { id: "current", label: "Current" },
+                  { id: "new", label: "New concept" },
+                ] as const}
+                onChange={setVariant}
+              />
+              <CreditsOverageControl />
+            </PrototypeControls>
 
             {variant === "current" ? <SuperagentsHubBanner /> : <SuperagentsHero />}
 

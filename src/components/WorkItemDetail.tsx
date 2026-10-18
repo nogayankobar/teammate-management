@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { Task, TaskType, LogEntry, FeedbackField } from "@/data/mockData";
+import { Task, TaskType, LogEntry, FeedbackField, getBilledCredits } from "@/data/mockData";
 
 // ─── Portal ───────────────────────────────────────────────────────────────────
 
@@ -892,7 +892,7 @@ export default function WorkItemDetail({ task }: { task: Task }) {
           <span className="mx-1.5 select-none">·</span>
           <span>{task.processingDuration}</span>
           <span className="mx-1.5 select-none">·</span>
-          <span>{task.credits} credits</span>
+          <span>{getBilledCredits(task)?.toLocaleString("en-US") ?? "-"} credits</span>
         </div>
       </div>
 

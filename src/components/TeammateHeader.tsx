@@ -1,7 +1,8 @@
 "use client";
 
+import { useShowOverage } from "@/lib/creditsDemoStore";
 import { useRouter } from "next/navigation";
-import { teammate, tasks } from "@/data/mockData";
+import { teammate, tasks, getBilledCredits, CREDIT_PACKAGE, CREDITS_USED_BEFORE_FEED } from "@/data/mockData";
 import KpiBar from "@/components/KpiBar";
 
 type Tab = "feed" | "instructions";
@@ -11,31 +12,45 @@ const tabs: Array<{ id: Tab; label: string }> = [
   { id: "instructions", label: "Instructions" },
 ];
 
-const CREDIT_BUDGET = 200;
+// Prototype-only overage example: usage that went past the package.
+const OVERAGE_EXAMPLE_USED = 103200;
 
+// Payer-level usage of the credit package (package from SFDC), across all agents and entities.
 export function BudgetWidget() {
-  const used = tasks.reduce((sum, t) => sum + t.credits, 0);
-  const pct = used / CREDIT_BUDGET;
-
-  const barColor =
-    pct >= 0.8 ? "bg-red-500" : pct >= 0.6 ? "bg-amber-400" : "bg-tipalti-success";
-  const usedColor =
-    pct >= 0.8 ? "text-red-600" : pct >= 0.6 ? "text-amber-500" : "text-tipalti-text-primary";
+  const showOverage = useShowOverage();
+  const used = showOverage
+    ? OVERAGE_EXAMPLE_USED
+    : CREDITS_USED_BEFORE_FEED + tasks.reduce((sum, t) => sum + (getBilledCredits(t) ?? 0), 0);
+  const overage = Math.max(used - CREDIT_PACKAGE.size, 0);
+  const pct = Math.min(used / CREDIT_PACKAGE.size, 1);
+  const fmt = (n: number) => n.toLocaleString("en-US");
 
   return (
-    <div className="flex flex-col items-end gap-1 ml-auto">
-      <div className="flex items-center gap-2">
-        <span className={`text-[13px] font-semibold tabular-nums ${usedColor}`}>
-          {used} <span className="font-normal text-tipalti-text-muted">/ {CREDIT_BUDGET} credits</span>
+    <div className="flex items-center gap-3 text-[13px] whitespace-nowrap">
+      <span className="flex items-center gap-1 font-semibold text-tipalti-text-primary">
+        Credits
+        <span className="relative inline-flex group/tip cursor-help">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2" className="text-tipalti-text-muted flex-shrink-0">
+            <circle cx="6" cy="6" r="5" />
+            <path d="M6 5.5v3" strokeLinecap="round" />
+            <circle cx="6" cy="3.7" r="0.5" fill="currentColor" stroke="none" />
+          </svg>
+          <span className="pointer-events-none absolute right-0 top-full mt-1.5 w-72 whitespace-normal rounded-lg bg-tipalti-navy text-white text-[11px] font-normal leading-snug px-2.5 py-2 opacity-0 group-hover/tip:opacity-100 transition-opacity duration-150 z-[60] shadow-lg text-left">
+            Credits used by all AI agents across all entities in your current package.
+            {overage > 0 && " Credits used beyond your package are billed as overage."}
+            <br /><br />
+            See how each agent calculates credits on its activity page.
+          </span>
         </span>
-        <button className="text-[12px] font-medium text-tipalti-blue hover:underline flex items-center gap-0.5">
-          + Increase
-        </button>
-      </div>
-      <div className="w-40 h-1.5 rounded-full bg-tipalti-border overflow-hidden">
+      </span>
+      <span className="tabular-nums text-tipalti-text-primary">
+        {fmt(used)}{" "}
+        <span className="text-tipalti-text-muted">of {fmt(CREDIT_PACKAGE.size)} used</span>
+      </span>
+      <div className="w-32 h-1.5 rounded-full bg-tipalti-border overflow-hidden">
         <div
-          className={`h-full rounded-full transition-all ${barColor}`}
-          style={{ width: `${Math.min(pct * 100, 100)}%` }}
+          className={`h-full rounded-full ${overage > 0 ? "bg-tipalti-warning" : "bg-tipalti-blue"}`}
+          style={{ width: `${pct * 100}%` }}
         />
       </div>
     </div>
@@ -53,11 +68,6 @@ export default function TeammateHeader({ activeTab, onTabChange, fresh }: Teamma
 
   return (
     <div>
-      {!fresh && (
-        <div className="flex justify-end mb-3">
-          <BudgetWidget />
-        </div>
-      )}
       <div className="flex items-center gap-3 mb-5">
         <button
           onClick={() => router.push("/")}
@@ -93,6 +103,9 @@ export default function TeammateHeader({ activeTab, onTabChange, fresh }: Teamma
       {/* KPIs — only once the agent is set up and has run */}
       {!fresh && (
         <div className="my-5">
+          <div className="flex justify-end mb-3">
+            <BudgetWidget />
+          </div>
           <KpiBar />
         </div>
       )}

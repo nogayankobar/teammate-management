@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { tasks, Task } from "@/data/mockData";
+import { tasks, Task, getBilledCredits, RATE_CARD } from "@/data/mockData";
 
 // ─── Portal ───────────────────────────────────────────────────────────────────
 
@@ -31,6 +31,29 @@ function SortIcon() {
       <path d="M4 4.5L6 2.5L8 4.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M4 7.5L6 9.5L8 7.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
+  );
+}
+
+// ─── Credits header tooltip ───────────────────────────────────────────────
+
+function CreditsInfo() {
+  return (
+    <span className="relative inline-flex group/tip cursor-help ml-1" onClick={(e) => e.stopPropagation()}>
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2" className="text-tipalti-text-muted flex-shrink-0">
+        <circle cx="6" cy="6" r="5" />
+        <path d="M6 5.5v3" strokeLinecap="round" />
+        <circle cx="6" cy="3.7" r="0.5" fill="currentColor" stroke="none" />
+      </svg>
+      <span className="pointer-events-none absolute right-0 top-full mt-1.5 w-[330px] whitespace-normal rounded-lg bg-tipalti-navy text-white text-[11px] font-normal leading-snug px-2.5 py-2 opacity-0 group-hover/tip:opacity-100 transition-opacity duration-150 z-[60] shadow-lg text-left">
+        Credits per work item:
+        <br />
+        <span className="font-semibold whitespace-nowrap">
+          {RATE_CARD.perLineExtracted} credits p/ Line extracted | {RATE_CARD.perFieldCoded} credits p/ Field coded
+        </span>
+        <br /><br />
+        Work items that ended in Error, Abandoned or Out of scope are not billable and show 0 credits.
+      </span>
+    </span>
   );
 }
 
@@ -414,10 +437,11 @@ export default function ExecutionFeed() {
 
       {/* Table */}
       <div className="border-t border-tipalti-border">
-        <div className="grid grid-cols-[96px_2fr_64px_220px_170px_56px_32px] gap-4 px-4 py-3 border-b border-tipalti-border">
+        <div className="grid grid-cols-[96px_2fr_64px_200px_170px_96px_32px] gap-4 px-4 py-3 border-b border-tipalti-border">
           {["Time", "Item", "Duration", "Review reason", "Status", "Credits"].map((col) => (
-            <button key={col} className="flex items-center text-sm font-semibold text-tipalti-text-primary text-left hover:text-tipalti-blue transition-colors group">
+            <button key={col} className="flex items-center text-sm font-semibold text-tipalti-text-primary text-left hover:text-tipalti-blue transition-colors group whitespace-nowrap">
               {col}
+              {col === "Credits" && <CreditsInfo />}
               <SortIcon />
             </button>
           ))}
@@ -432,7 +456,7 @@ export default function ExecutionFeed() {
           filtered.map((task) => (
             <div
               key={task.id}
-              className="grid grid-cols-[96px_2fr_64px_220px_170px_56px_32px] gap-4 px-4 py-3.5 border-b border-tipalti-border hover:bg-[#FAFBFF] transition-colors group items-center cursor-pointer"
+              className="grid grid-cols-[96px_2fr_64px_200px_170px_96px_32px] gap-4 px-4 py-3.5 border-b border-tipalti-border hover:bg-[#FAFBFF] transition-colors group items-center cursor-pointer"
               onClick={() => router.push(`/work-items/${task.id}`)}
             >
               <div>
@@ -453,7 +477,9 @@ export default function ExecutionFeed() {
 
               <HumanReviewCell reasons={task.humanReviewReason} />
               <StatusCell task={task} />
-              <span className="text-[13px] text-tipalti-text-secondary">{task.credits}</span>
+              <span className="text-[13px] text-tipalti-text-secondary tabular-nums">
+                {getBilledCredits(task)?.toLocaleString("en-US") ?? "-"}
+              </span>
 
               {/* 3-dot menu */}
               <div

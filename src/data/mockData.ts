@@ -756,3 +756,23 @@ export const tasks: Task[] = [
     ],
   },
 ];
+
+// ─── AI credits ───────────────────────────────────────────────────────────────
+
+// Rate card for AP agent - invoice processing. Same for all customers.
+export const RATE_CARD = { perLineExtracted: 20, perFieldCoded: 20 };
+
+const NON_BILLABLE: TaskStatus[] = ["error", "abandoned"];
+
+// Billed credits = (lines × rate + fields × rate) × billable. In-progress items have no credits yet.
+export function getBilledCredits(task: Task): number | null {
+  if (task.status === "in_progress") return null;
+  if (NON_BILLABLE.includes(task.status)) return 0;
+  const lines = task.lineItems?.length ?? 1;
+  const fields = task.fieldStats.total;
+  return lines * RATE_CARD.perLineExtracted + fields * RATE_CARD.perFieldCoded;
+}
+
+// Payer's AI credit package, from SFDC. Used = all billed credits in the package period, across agents and entities.
+export const CREDIT_PACKAGE = { size: 100000, start: "Jan 1", end: "Dec 31, 2026" };
+export const CREDITS_USED_BEFORE_FEED = 41200;

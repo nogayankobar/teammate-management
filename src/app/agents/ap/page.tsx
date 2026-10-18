@@ -8,6 +8,7 @@ import ExecutionFeed from "@/components/ExecutionFeed";
 import Instructions from "@/components/Instructions";
 import CanvasDoc from "@/components/CanvasDoc";
 import PermissionsModal from "@/components/PermissionsModal";
+import PrototypeControls, { Segmented, CreditsOverageControl } from "@/components/PrototypeControls";
 import {
   getDemoState,
   setDemoState,
@@ -545,6 +546,20 @@ export default function Home() {
           router.push("/agents/ap/onboarding");
         }}
       />
+
+      {/* Prototype-only demo pickers */}
+      <PrototypeControls>
+        <Segmented
+          label="AP demo"
+          value={fresh ? "fresh" : "configured"}
+          options={[
+            { id: "fresh", label: "New activation" },
+            { id: "configured", label: "Already active" },
+          ] as const}
+          onChange={setDemoState}
+        />
+        <CreditsOverageControl />
+      </PrototypeControls>
 
       {/* Global chat panel */}
       {gcOpen && (
