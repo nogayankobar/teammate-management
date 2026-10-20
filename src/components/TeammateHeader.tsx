@@ -28,7 +28,7 @@ export function BudgetWidget() {
   return (
     <div className="flex items-center gap-3 text-[13px] whitespace-nowrap">
       <span className="flex items-center gap-1 font-semibold text-tipalti-text-primary">
-        AI Credits
+        AI credits
         <span className="relative inline-flex group/tip cursor-help">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2" className="text-tipalti-text-muted flex-shrink-0">
             <circle cx="6" cy="6" r="5" />
