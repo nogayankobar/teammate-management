@@ -37,7 +37,7 @@ const statusConfig: Record<
     dot: "bg-gray-400",
   },
   error: {
-    label: "Error",
+    label: "Failed",
     className: "bg-red-50 text-red-600",
     dot: "bg-red-500",
   },

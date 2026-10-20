@@ -368,7 +368,7 @@ function TypeIcon({ type }: { type: TaskType }) {
 
 function getDetailStatus(task: Task): { label: string; cls: string } {
   if (task.status === "in_progress") return { label: "In progress",           cls: "bg-gray-100 text-gray-500" };
-  if (task.status === "error")       return { label: "Error",                 cls: "bg-red-50 text-red-600" };
+  if (task.status === "error")       return { label: "Failed",                 cls: "bg-red-50 text-red-600" };
   if (task.status === "abandoned")   return { label: "Abandoned",             cls: "bg-gray-100 text-gray-500" };
   if (task.status === "flagged" || task.status === "pending_review")
                                      return { label: "Awaiting human review", cls: "bg-tipalti-warning-bg text-tipalti-warning" };

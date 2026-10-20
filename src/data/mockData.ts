@@ -714,7 +714,7 @@ export const tasks: Task[] = [
     date: "2026-07-10",
     processedAt: "2026-07-10T09:30:00",
     processingDuration: "12s",
-    actionLabel: "Error",
+    actionLabel: "Failed",
     fieldStats: { total: 0, confident: 0, escalated: 0 },
     userOverride: "pending",
     summary: "Processing failed - vendor API timeout",
@@ -774,5 +774,5 @@ export function getBilledCredits(task: Task): number | null {
 }
 
 // Payer's AI credit package, from SFDC. Used = all billed credits in the package period, across agents and entities.
-export const CREDIT_PACKAGE = { size: 100000, start: "Jan 1", end: "Dec 31, 2026" };
+export const CREDIT_PACKAGE = { size: 240000, start: "Jan 1", end: "Dec 31, 2026" };
 export const CREDITS_USED_BEFORE_FEED = 41200;

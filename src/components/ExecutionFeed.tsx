@@ -51,7 +51,7 @@ function CreditsInfo() {
           {RATE_CARD.perLineExtracted} credits p/ Line extracted | {RATE_CARD.perFieldCoded} credits p/ Field coded
         </span>
         <br /><br />
-        Work items that ended in Error, Abandoned or Out of scope are not billable and show 0 credits.
+        Work items that ended as Failed, Out of scope or Abandoned are not billable and show 0 credits.
       </span>
     </span>
   );
@@ -61,7 +61,7 @@ function CreditsInfo() {
 
 function getDisplayStatus(task: Task): { label: string; color: "green" | "amber" | "blue" | "gray" | "red" } {
   if (task.status === "in_progress") return { label: "In progress", color: "gray" };
-  if (task.status === "error")       return { label: "Error", color: "red" };
+  if (task.status === "error")       return { label: "Failed", color: "red" };
   if (task.status === "abandoned")   return { label: "Abandoned", color: "gray" };
   if (task.status === "flagged" || task.status === "pending_review") {
     return { label: "Awaiting human review", color: "amber" };
