@@ -28,7 +28,7 @@ export function BudgetWidget() {
   return (
     <div className="flex items-center gap-3 text-[13px] whitespace-nowrap">
       <span className="flex items-center gap-1 font-semibold text-tipalti-text-primary">
-        Credits
+        AI Credits
         <span className="relative inline-flex group/tip cursor-help">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2" className="text-tipalti-text-muted flex-shrink-0">
             <circle cx="6" cy="6" r="5" />
@@ -36,7 +36,7 @@ export function BudgetWidget() {
             <circle cx="6" cy="3.7" r="0.5" fill="currentColor" stroke="none" />
           </svg>
           <span className="pointer-events-none absolute right-0 top-full mt-1.5 w-72 whitespace-normal rounded-lg bg-tipalti-navy text-white text-[11px] font-normal leading-snug px-2.5 py-2 opacity-0 group-hover/tip:opacity-100 transition-opacity duration-150 z-[60] shadow-lg text-left">
-            Credits used by all AI agents across all entities in your current term.
+            Credits used by all AI agents in your current term.
             {overage > 0 && " Credits used beyond your plan are billed monthly as overage."}
             <br /><br />
             See how each agent calculates credits on its activity page.

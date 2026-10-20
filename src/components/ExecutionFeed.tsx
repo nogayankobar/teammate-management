@@ -438,10 +438,10 @@ export default function ExecutionFeed() {
       {/* Table */}
       <div className="border-t border-tipalti-border">
         <div className="grid grid-cols-[96px_2fr_64px_200px_170px_96px_32px] gap-4 px-4 py-3 border-b border-tipalti-border">
-          {["Time", "Item", "Duration", "Review reason", "Status", "Credits"].map((col) => (
+          {["Time", "Item", "Duration", "Review reason", "Status", "AI Credits"].map((col) => (
             <button key={col} className="flex items-center text-sm font-semibold text-tipalti-text-primary text-left hover:text-tipalti-blue transition-colors group whitespace-nowrap">
               {col}
-              {col === "Credits" && <CreditsInfo />}
+              {col === "AI Credits" && <CreditsInfo />}
               <SortIcon />
             </button>
           ))}
